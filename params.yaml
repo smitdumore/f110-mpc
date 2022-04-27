@@ -1,0 +1,52 @@
+# q0: 10.0
+# q1: 10.0
+# q2: 0.0
+
+# r0: 0.10
+# r1: 5.0
+
+pose_topic: "/odom"
+scan_topic: "/scan"
+drive_topic: "/drive"
+
+horizon: 30
+dt: 0.01
+
+#occ_grid
+occ_size: 10
+occ_discrete: 0.1
+occ_dilation: 0.15
+
+#paths
+# cmaes_lookahead_1: -1.0
+# cmaes_lookahead_2: 2.0
+# switch_distance_threshold: 3.0
+
+# #traj_planner
+# num_traj: 10
+# close_weight: 1.5
+# MAX_HORIZON: 50
+
+# Lanes
+# lane_0: "csv/fooxx.csv"
+# lane_1: "csv/fooxx_point25.csv"
+# lane_2: "csv/fooxx_point5.csv"
+# lane_3: "csv/fooxx_point75.csv"
+# lane_4: "csv/fooxx_one.csv"
+# lane_5: "csv/fooxx_1point25.csv"
+# lane_6: "csv/fooxx_1point5.csv"
+# lane_7: "csv/fooxx_1point75.csv"
+# lane_8: "csv/fooxx_two.csv"
+
+# desired input
+des_vel: 4.5
+des_steer: 0
+
+#constraints 
+umax: 4.5 #change dt if you change this
+umin: 3
+
+follow_gap_thresh: 3
+state_lims: 1
+fov_divider: 1.5
+buffer: 3
