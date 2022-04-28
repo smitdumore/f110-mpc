@@ -17,7 +17,8 @@ class Model
 
         virtual ~Model();
 
-        Eigen::MatrixXd A();
+        //getter functions
+        Eigen::MatrixXd A();          
         Eigen::MatrixXd B();
         Eigen::MatrixXd C();
 

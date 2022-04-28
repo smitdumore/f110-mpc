@@ -6,7 +6,7 @@ project::~project()
 
 }
 
-project::project(ros::NodeHandle &nh) : occ_grid_(nh)
+project::project(ros::NodeHandle &nh) : occ_grid_(nh) , constraints_(nh)
 {
     std::string pose_topic, scan_topic, drive_topic;
 
@@ -27,6 +27,14 @@ project::project(ros::NodeHandle &nh) : occ_grid_(nh)
 
     drive_pub_ = nh_.advertise<ackermann_msgs::AckermannDriveStamped>(drive_topic, 1);
 
+    // read CSV paths here
+    // trajectory object created
+    // if(readCSV){
+
+    //  }
+    //  else{ cannot read file }
+    // bestMiniPath = traj_obj.waypoints_;
+
     ROS_INFO("Created project");
 }
 
@@ -39,8 +47,58 @@ void project::ScanCallback(const sensor_msgs::LaserScan::ConstPtr &scan_msg)
     //         first_scan_estimate_ = true;
     //     }
 
-    ROS_WARN("SCAN CALL");
-    occ_grid_.FillOccGrid(current_pose_, scan_msg);
-    occ_grid_.Visualize();
+        ROS_WARN("SCAN CALL");
+
+        State state(0.0,0.0,0.0);
+        sensor_msgs::LaserScan scan_msg_ = *scan_msg;
+
+        constraints_.FindHalfSpaces(state , scan_msg_);
+
+        //occ_grid_.FillOccGrid(current_pose_, scan_msg);
+        //occ_grid_.Visualize();
     //}
 }
+/*
+void project::OdomCallback(const nav_msgs::Odometry::ConstPtr &odom_msg)
+{
+    current_pose_ = odom_msg->pose.pose;
+    if (!first_pose_estimate_)
+    {
+        first_pose_estimate_ = true;
+    }
+    float current_angle = Transforms::GetCarOrientation(current_pose_);
+    State current_state(current_pose_.position.x, current_pose_.position.y, current_angle);
+    ackermann_msgs::AckermannDriveStamped drive_msg;
+
+    
+    
+    if (first_scan_estimate_)
+    {
+        Input input_to_pass = GetNextInput();
+        input_to_pass.set_v(4);
+        
+        mpc_.Update(current_state ,input_to_pass, bestMiniPath);
+
+        current_inputs_ = mpc_.solved_trajectory();
+        mpc_.Visualize();
+        inputs_idx_ = 0;
+        
+    }
+}
+
+Input project::GetNextInput()
+{   
+    //initially the size of current_inputs_ should be zero
+    // inputs_idx_ intially has garbage value ??/
+    //debug both of these with ROS LOGS
+
+    if (inputs_idx_ >= current_inputs_.size())
+    {
+        // ROS_ERROR("Trajectory complete!");
+        return Input(0.5,-0.05);           //v and steering
+    }
+
+    // current_inputs_ is a vector of inputs
+    return current_inputs_[inputs_idx_];             //returns the input object at a certain index
+}
+*/

@@ -14,6 +14,11 @@
 
 //custom files
 #include "occupancy_grid.h"
+#include "input.h"
+#include "state.h"
+#include "transforms.h"
+//#include "mpc.h"
+#include "constraints.h"
 
 class project
 {
@@ -27,10 +32,25 @@ class project
         ros::Subscriber odom_sub_;
         ros::Publisher drive_pub_;
 
+        bool first_pose_estimate_ = false;
+        bool first_scan_estimate_ = false;
+
         geometry_msgs::Pose current_pose_;
         std::pair<float, float> occ_offset_;
+
         OccGrid occ_grid_;                      //occupancy grid object
+        Constraints constraints_;               //constraints object
+
+        std::vector<Input> current_inputs_;
+        std::vector<State> bestMiniPath;
+        
+        unsigned int inputs_idx_;               //strictly positive
 
         void ScanCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg);
+
+        //void OdomCallback(const nav_msgs::Odometry::ConstPtr &odom_msg);
+
+        // Used to provide the next input for /drive
+        Input GetNextInput();
 };  
 

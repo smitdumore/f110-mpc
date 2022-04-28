@@ -36,13 +36,16 @@ include_directories(
 )
 
 add_executable(mpc_node 
-  src/mpc.cpp
+  #src/mpc.cpp
   src/input.cpp
   src/state.cpp
   src/constraints.cpp  
   src/project.cpp
   src/node.cpp
   src/occupancy_grid.cpp
+  src/transforms.cpp
+  #src/trajectory.cpp
+  src/model.cpp
 )
 
 add_dependencies(mpc_node ${f110_mpc_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
