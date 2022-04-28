@@ -6,7 +6,7 @@ project::~project()
 
 }
 
-project::project(ros::NodeHandle &nh) : occ_grid_(nh) , constraints_(nh)
+project::project(ros::NodeHandle &nh) : occ_grid_(nh) , constraints_(nh) , traj_(nh)
 {
     std::string pose_topic, scan_topic, drive_topic;
 
@@ -27,16 +27,9 @@ project::project(ros::NodeHandle &nh) : occ_grid_(nh) , constraints_(nh)
 
     drive_pub_ = nh_.advertise<ackermann_msgs::AckermannDriveStamped>(drive_topic, 1);
 
-    // read CSV paths here
-    // trajectory object created
-    // if(readCSV){
-
-    //  }
-    //  else{ cannot read file }
-    // bestMiniPath = traj_obj.waypoints_;  
-
     traj_.ReadCSV("fooxx_1point75");
     bestMiniPath = traj_.waypoints_;
+    
 
     ROS_INFO("Created project");
 }
@@ -49,14 +42,11 @@ void project::ScanCallback(const sensor_msgs::LaserScan::ConstPtr &scan_msg)
     //     {
     //         first_scan_estimate_ = true;
     //     }
+        traj_.Visualize();
+        //State state(0.0,0.0,0.0);
+        //sensor_msgs::LaserScan scan_msg_ = *scan_msg;
 
-       ROS_INFO_STREAM("size of minip path:  " << bestMiniPath.size() );
-
-
-        State state(0.0,0.0,0.0);
-        sensor_msgs::LaserScan scan_msg_ = *scan_msg;
-
-        constraints_.FindHalfSpaces(state , scan_msg_);
+        //constraints_.FindHalfSpaces(state , scan_msg_);
 
         //occ_grid_.FillOccGrid(current_pose_, scan_msg);
         //occ_grid_.Visualize();
