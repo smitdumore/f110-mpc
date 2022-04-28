@@ -33,7 +33,10 @@ project::project(ros::NodeHandle &nh) : occ_grid_(nh) , constraints_(nh)
 
     //  }
     //  else{ cannot read file }
-    // bestMiniPath = traj_obj.waypoints_;
+    // bestMiniPath = traj_obj.waypoints_;  
+
+    traj_.ReadCSV("fooxx_1point75");
+    bestMiniPath = traj_.waypoints_;
 
     ROS_INFO("Created project");
 }
@@ -47,7 +50,8 @@ void project::ScanCallback(const sensor_msgs::LaserScan::ConstPtr &scan_msg)
     //         first_scan_estimate_ = true;
     //     }
 
-        ROS_WARN("SCAN CALL");
+       ROS_INFO_STREAM("size of minip path:  " << bestMiniPath.size() );
+
 
         State state(0.0,0.0,0.0);
         sensor_msgs::LaserScan scan_msg_ = *scan_msg;
@@ -89,7 +93,7 @@ void project::OdomCallback(const nav_msgs::Odometry::ConstPtr &odom_msg)
 Input project::GetNextInput()
 {   
     //initially the size of current_inputs_ should be zero
-    // inputs_idx_ intially has garbage value ??/
+    // inputs_idx_ intially has garbage value ??
     //debug both of these with ROS LOGS
 
     if (inputs_idx_ >= current_inputs_.size())

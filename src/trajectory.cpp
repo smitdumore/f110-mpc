@@ -2,10 +2,21 @@
 
 using namespace std;
 
+Trajectory::Trajectory()
+{
+}
+
+Trajectory::~Trajectory()
+{
+
+}
+
+
 bool Trajectory::ReadCSV(string filename)
 {
-    string path = ros::package::getPath("f110-mpc")+"/csv/"+filename;
+    string path = ros::package::getPath("f110-mpc")+"/csv/"+filename+".csv";
     cout << path << endl;
+    ros::Duration(10.0).sleep();
     ifstream input(path);
     string coordX, coordY;
     vector<pair<float,float>> temp;

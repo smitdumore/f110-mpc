@@ -44,7 +44,7 @@ add_executable(mpc_node
   src/node.cpp
   src/occupancy_grid.cpp
   src/transforms.cpp
-  #src/trajectory.cpp
+  src/trajectory.cpp
   src/model.cpp
 )
 
@@ -53,4 +53,5 @@ add_dependencies(mpc_node ${f110_mpc_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS
 target_link_libraries(mpc_node 
   ${catkin_LIBRARIES}
   OsqpEigen::OsqpEigen osqp::osqp
+  stdc++fs
 )

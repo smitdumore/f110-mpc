@@ -1,5 +1,5 @@
-//#ifndef OCCUPANCY_H
-//#define OCC_H             ????
+#ifndef OCCUPANCY_GRID_H
+#define OCCUPANCY_GRID_H
 
 #include <ros/ros.h>
 #include <Eigen/Geometry>
@@ -44,3 +44,5 @@ class OccGrid
         Eigen::MatrixXf grid_;                   //underlying occupancy grid matrix
         ros::Publisher occ_pub_;
 };
+
+#endif  

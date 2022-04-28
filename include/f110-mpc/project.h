@@ -17,7 +17,7 @@
 #include "input.h"
 #include "state.h"
 #include "transforms.h"
-//#include "mpc.h"
+#include "trajectory.h"
 #include "constraints.h"
 
 class project
@@ -40,6 +40,7 @@ class project
 
         OccGrid occ_grid_;                      //occupancy grid object
         Constraints constraints_;               //constraints object
+        Trajectory traj_;                       //trajectory object
 
         std::vector<Input> current_inputs_;
         std::vector<State> bestMiniPath;
