@@ -12,8 +12,8 @@
 #include "constraints.h"
 #include "state.h"
 #include "model.h"
-//#include "cost.h"
-//#include "visualizer.h"
+#include "cost.h"
+#include "visualizer.h"
 
 class MPC
 {
@@ -25,7 +25,6 @@ class MPC
         // Runs one iteration of MPC given the latest state from callback and last MPC input
         // Uses desired_state_trajectory for tracking reference
         void Update(State current_state, Input input, std::vector<State> &desired_state_trajectory);
-
         // Generates pretty lines
         void Visualize();
         // Updates scan_msg content
@@ -62,7 +61,7 @@ class MPC
         sensor_msgs::LaserScan scan_msg_;
         Eigen::VectorXd QPsolution_;
         OsqpEigen::Solver solver_;
-        //std::vector<Input> solved_trajectory_;             //is this the trajectory returned my MPC solver ??
+        std::vector<Input> solved_trajectory_;             //is this the trajectory returned my MPC solver ??
 
         
         ros::NodeHandle nh_;
@@ -94,3 +93,5 @@ class MPC
         // Converts output of osqp vector into vector of inputs
         void UpdateSolvedTrajectory();
 };
+
+#endif

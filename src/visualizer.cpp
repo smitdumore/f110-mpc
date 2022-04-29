@@ -28,13 +28,8 @@ std::vector<std_msgs::ColorRGBA> Visualizer::GenerateVizColors(std::vector<std::
     return vis_colors;
 }
 
-visualization_msgs::Marker Visualizer::GenerateList(std::vector<geometry_msgs::Point> &marker_points, std::vector<std_msgs::ColorRGBA> &marker_colors)
+visualization_msgs::Marker Visualizer::GenerateList(std::vector<geometry_msgs::Point> &marker_points, std::vector<std_msgs::ColorRGBA> &marker_colors, int type, double scale_x, double scale_y, double scale_z)
 {
-    int type = visualization_msgs::Marker::SPHERE_LIST;
-    double scale_x = 0.1;
-    double scale_y = 0.1;
-    double scale_z = 0.1;
-
     visualization_msgs::Marker marker;
     marker.header.frame_id = "map";
     marker.header.stamp = ros::Time();
@@ -58,21 +53,21 @@ visualization_msgs::Marker Visualizer::GenerateList(std::vector<geometry_msgs::P
     return marker;
 }
 
-// visualization_msgs::Marker Visualizer::GenerateList(std::vector<std::pair<float,float>> &points, std::vector<std_msgs::ColorRGBA> &marker_colors, int type, double scale_x, double scale_y, double scale_z)
-// {
-//     std::vector<geometry_msgs::Point> temp = GenerateVizPoints(points);
-//     return GenerateList(temp, marker_colors, type, scale_x, scale_y, scale_z);
-// }
+visualization_msgs::Marker Visualizer::GenerateList(std::vector<std::pair<float,float>> &points, std::vector<std_msgs::ColorRGBA> &marker_colors, int type, double scale_x, double scale_y, double scale_z)
+{
+    std::vector<geometry_msgs::Point> temp = GenerateVizPoints(points);
+    return GenerateList(temp, marker_colors, type, scale_x, scale_y, scale_z);
+}
 
 
 
-// visualization_msgs::Marker Visualizer::GenerateSphereList(std::vector<std::pair<float,float>> &points, float r, float g, float b)
-// {
-//     std::vector<std_msgs::ColorRGBA> colors = GenerateVizColors(points, r, g, b);
-//     return GenerateSphereList(points, colors);
-// }
+visualization_msgs::Marker Visualizer::GenerateSphereList(std::vector<std::pair<float,float>> &points, float r, float g, float b)
+{
+    std::vector<std_msgs::ColorRGBA> colors = GenerateVizColors(points, r, g, b);
+    return GenerateSphereList(points, colors);
+}
 
-// visualization_msgs::Marker Visualizer::GenerateSphereList(std::vector<std::pair<float,float>> &points, std::vector<std_msgs::ColorRGBA> &marker_colors)
-// {
-//     return GenerateList(points, marker_colors, visualization_msgs::Marker::SPHERE_LIST);
-// }
+visualization_msgs::Marker Visualizer::GenerateSphereList(std::vector<std::pair<float,float>> &points, std::vector<std_msgs::ColorRGBA> &marker_colors)
+{
+    return GenerateList(points, marker_colors, visualization_msgs::Marker::SPHERE_LIST);
+}

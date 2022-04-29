@@ -19,6 +19,7 @@
 #include "transforms.h"
 #include "trajectory.h"
 #include "constraints.h"
+#include "mpc.h"
 
 class project
 {
@@ -41,15 +42,16 @@ class project
         OccGrid occ_grid_;                      //occupancy grid object
         Constraints constraints_;               //constraints object
         Trajectory traj_;                       //trajectory object
+        MPC mpc_;
 
         std::vector<Input> current_inputs_;
-        std::vector<State> bestMiniPath;
+        std::vector<State> stateTrajectory;
         
         unsigned int inputs_idx_;               //strictly positive
 
         void ScanCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg);
 
-        //void OdomCallback(const nav_msgs::Odometry::ConstPtr &odom_msg);
+        void OdomCallback(const nav_msgs::Odometry::ConstPtr &odom_msg);
 
         // Used to provide the next input for /drive
         Input GetNextInput();
