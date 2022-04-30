@@ -29,9 +29,13 @@ project::project(ros::NodeHandle &nh) : occ_grid_(nh) , constraints_(nh) , traj_
 
     traj_.ReadCSV("skirk");
     stateTrajectory = traj_.waypoints_;
-    
 
-    ROS_INFO("Created project");
+    for(int i=0 ; i < 50 ; i++){
+            miniPath_.push_back( stateTrajectory.at(i) );
+    }
+
+    ROS_INFO("Mini path size %d", miniPath_.size());
+    ros::Duration(2.0).sleep();
 }
 
 void project::ScanCallback(const sensor_msgs::LaserScan::ConstPtr &scan_msg)
@@ -72,11 +76,14 @@ void project::OdomCallback(const nav_msgs::Odometry::ConstPtr &odom_msg)
         Input input_to_pass = GetNextInput();
         input_to_pass.set_v(4);
         traj_.Visualize();
+
+        //breatking stateTajectory into mini path
+
+        mpc_.Update(current_state ,input_to_pass, miniPath_);
+        // solving only once is required
         
-        mpc_.Update(current_state ,input_to_pass, stateTrajectory);
-        
-        //current_inputs_ = mpc_.solved_trajectory();
-        //mpc_.Visualize();
+        current_inputs_ = mpc_.solved_trajectory();
+        mpc_.Visualize();
         inputs_idx_ = 0;
         
     }

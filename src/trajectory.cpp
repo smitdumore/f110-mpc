@@ -54,7 +54,7 @@ bool Trajectory::ReadCSV(string filename)
 void Trajectory::Visualize()
 {
     std::vector<pair<float,float>> best_traj;
-    ROS_INFO_STREAM("size of minip path:  " << waypoints_.size() );
+    //ROS_INFO_STREAM("size of minip path:  " << waypoints_.size() );
 
     for (int i = 0; i< waypoints_.size(); i++)
     {

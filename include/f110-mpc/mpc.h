@@ -34,7 +34,7 @@ class MPC
         Constraints constraints();
         float dt();                 //initialising variable values to 1
         int horizon();
-        //std::vector<Input> solved_trajectory();        //is this the trajectory returned my MPC solver ??
+        std::vector<Input> solved_trajectory();        //is this the trajectory returned my MPC solver ??
 
     private:
         int horizon_;

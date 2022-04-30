@@ -129,15 +129,14 @@ void MPC::Update(State current_state , Input input, std::vector<State> &desired_
         }
         
     }
-    ROS_ERROR("MPC SETTING DONE");
-    ros::Duration(5.0).sleep();
-    return;
+
     if (!solver_.solve())
     {
         ROS_ERROR("solve failed");
     }
     else
-    {
+    {   
+        ROS_ERROR("solved--------------");
         QPsolution_ = solver_.getSolution();
         UpdateSolvedTrajectory();
     }
@@ -396,4 +395,9 @@ void MPC::DrawCar(State &state, Input &input)
     color.a = 1;
     colors_.push_back(color);
     colors_.push_back(color);
+}
+
+std::vector<Input> MPC::solved_trajectory()
+{
+    return solved_trajectory_;
 }

@@ -46,6 +46,7 @@ class project
 
         std::vector<Input> current_inputs_;
         std::vector<State> stateTrajectory;
+        std::vector<State> miniPath_;
         
         unsigned int inputs_idx_;               //strictly positive
 
