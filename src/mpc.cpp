@@ -173,7 +173,7 @@ void MPC::Visualize()
 
         DrawCar(predicted_state, predicted_input);
     }
-
+    
     geometry_msgs::Point point;
     std_msgs::ColorRGBA color;
 
@@ -202,6 +202,7 @@ void MPC::Visualize()
     mpc_pub_.publish(Visualizer::GenerateList(points_, colors_, visualization_msgs::Marker::LINE_LIST, 0.05, 0.0, 0.0));
     points_.clear();
     colors_.clear();
+    
 }
 
 void MPC::CreateHessianMatrix()
