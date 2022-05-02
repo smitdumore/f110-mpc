@@ -23,6 +23,7 @@ class Model
         Eigen::MatrixXd C();
 
         void Linearize(State &S, Input &I, double dt);
+        void simulate_dynamics(State &state, Input &input , double dt, State &new_state);
 
     private:
         double time_step_;

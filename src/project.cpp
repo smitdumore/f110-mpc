@@ -6,7 +6,7 @@ project::~project()
 
 }
 
-project::project(ros::NodeHandle &nh) : occ_grid_(nh) , constraints_(nh) , traj_(nh) , mpc_(nh)
+project::project(ros::NodeHandle &nh) : occ_grid_(nh) , traj_plan_(nh)
 {
     std::string pose_topic, scan_topic, drive_topic;
 
@@ -27,19 +27,6 @@ project::project(ros::NodeHandle &nh) : occ_grid_(nh) , constraints_(nh) , traj_
 
     drive_pub_ = nh_.advertise<ackermann_msgs::AckermannDriveStamped>(drive_topic, 1);
 
-    traj_.ReadCSV("skirk"); //skirk
-    stateTrajectory = traj_.waypoints_;
-
-    itr = mpc_.horizon();
-    for(int i=0 ; i < itr ; i++){
-        miniPath_.push_back( stateTrajectory.at(i) );
-    }
-    itr += itr;
-    //ROS_INFO("Mini path size %d", miniPath_.size());
-    
-
-
-    ros::Duration(2.0).sleep();
 }
 
 void project::ScanCallback(const sensor_msgs::LaserScan::ConstPtr &scan_msg)
@@ -49,7 +36,7 @@ void project::ScanCallback(const sensor_msgs::LaserScan::ConstPtr &scan_msg)
     //     if (!first_scan_estimate_)
     //     {
              first_scan_estimate_ = true;
-             mpc_.UpdateScan(scan_msg);
+             //mpc_.UpdateScan(scan_msg);
     //     }
         //
         //State state(0.0,0.0,0.0);
@@ -65,64 +52,9 @@ void project::ScanCallback(const sensor_msgs::LaserScan::ConstPtr &scan_msg)
 
 void project::OdomCallback(const nav_msgs::Odometry::ConstPtr &odom_msg)
 {
-    //ROS_INFO("ODOM");
-    current_pose_ = odom_msg->pose.pose;
-    if (!first_pose_estimate_)
-    {
-        first_pose_estimate_ = true;
-    }
-    float current_angle = Transforms::GetCarOrientation(current_pose_);
-    State current_state(current_pose_.position.x, current_pose_.position.y, current_angle);
-    ackermann_msgs::AckermannDriveStamped drive_msg;
-
-    if (first_scan_estimate_)
-    {
-        
-        Input input_to_pass = GetNextInput();
-        input_to_pass.set_v(4.5);
-        traj_.Visualize();
-
-        //*********** update minipaths here *****************//
-
-        //end point of mini path 
-        std::pair<float , float> end_point;
-        end_point.first = miniPath_.back().x();
-        end_point.second = miniPath_.back().y();
-        
-        std::pair<float , float> car_point;
-        car_point.first = current_pose_.position.x;
-        car_point.second = current_pose_.position.y;
-
-        float dist = Transforms::CalcDist(car_point , end_point);
-
-        if(dist < 0.8){
-            miniPath_.clear();
-            for(int i=itr ; i < itr+mpc_.horizon() ; i++){
-                miniPath_.push_back( stateTrajectory.at(i) );
-            }
-            itr+=mpc_.horizon();
-        }
-
-        mpc_.Update(current_state ,input_to_pass, miniPath_);
-            // solving only once is required 
-        
-        current_inputs_ = mpc_.solved_trajectory();
-            
-            
-        mpc_.Visualize();
-        //ros::Duration(2.0).sleep();
-        //itr++;
-        /****************/
-        ackermann_msgs::AckermannDriveStamped drive_msg;
-        drive_msg.header.stamp = ros::Time::now();
-        drive_msg.drive.speed = current_inputs_.at(0).v();
-        drive_msg.drive.steering_angle = current_inputs_.at(0).steer_ang();
-        drive_pub_.publish(drive_msg);
-        int dt_ms = 2*mpc_.dt()*1000;
-        /***************/
-        inputs_idx_ = 0;
-        
-    }
+    
+    traj_plan_.visualize_dwa();
+    
 }
 
 Input project::GetNextInput()

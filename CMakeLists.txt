@@ -48,6 +48,7 @@ add_executable(mpc_node
   src/trajectory.cpp
   src/model.cpp
   src/visualizer.cpp
+  src/trajectory_planner.cpp
 )
 
 add_dependencies(mpc_node ${f110_mpc_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})

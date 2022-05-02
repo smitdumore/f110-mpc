@@ -20,6 +20,7 @@
 #include "trajectory.h"
 #include "constraints.h"
 #include "mpc.h"
+#include "trajectory_planner.h"
 
 class project
 {
@@ -40,16 +41,11 @@ class project
         std::pair<float, float> occ_offset_;
 
         OccGrid occ_grid_;                      //occupancy grid object
-        Constraints constraints_;               //constraints object
-        Trajectory traj_;                       //trajectory object
-        MPC mpc_;
-
-        bool solved_ = false;
-        int itr=0;
-
-        std::vector<Input> current_inputs_;
-        std::vector<State> stateTrajectory;
-        std::vector<State> miniPath_;
+        //Constraints constraints_;               //constraints object
+        //Trajectory traj_;                       //trajectory object
+        //MPC mpc_;
+        Traj_Plan traj_plan_;
+        
         
         unsigned int inputs_idx_;               //strictly positive
 

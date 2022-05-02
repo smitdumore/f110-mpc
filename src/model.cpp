@@ -1,5 +1,5 @@
 #include "f110-mpc/model.h"
-
+const double CAR_LENGTH = 0.35;
 Model::Model()
 {
     // ROS_INFO("model created");
@@ -56,4 +56,21 @@ void Model::Linearize(State &S, Input &I, double dt)
 
 
     //how is this linear ?? 
+}
+
+void Model::simulate_dynamics(State& state, Input &input, double dt, State& new_state)
+{
+    Eigen::VectorXd dynamics(state.size());
+    Eigen::VectorXd state_vector;
+    Eigen::VectorXd new_state_vector;
+
+    dynamics(0) = input.v() * cos(state.ori());
+    dynamics(1) = input.v() * sin(state.ori());
+    dynamics(2) = tan(input.steer_ang()) * input.v()/CAR_LENGTH;
+    state_vector = state.StateToVector();
+    new_state_vector = state_vector + dynamics*dt;
+    
+    new_state.set_x(new_state_vector(0));
+    new_state.set_y(new_state_vector(1));
+    new_state.set_ori(new_state_vector(2));
 }

@@ -10,7 +10,7 @@ scan_topic: "/scan"
 drive_topic: "/drive"
 
 horizon: 30
-dt: 0.01
+dt: 0.04
 
 #occ_grid
 occ_size: 10
@@ -50,3 +50,8 @@ follow_gap_thresh: 3
 state_lims: 1
 fov_divider: 1.5
 buffer: 3
+
+speed_discrete: 40
+steer_discrete: 50
+steer_max: 0.4
+traj_discrete: 20
