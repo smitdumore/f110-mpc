@@ -44,6 +44,9 @@ class project
         Trajectory traj_;                       //trajectory object
         MPC mpc_;
 
+        bool solved_ = false;
+        int itr=0;
+
         std::vector<Input> current_inputs_;
         std::vector<State> stateTrajectory;
         std::vector<State> miniPath_;

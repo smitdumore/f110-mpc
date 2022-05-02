@@ -30,10 +30,11 @@ project::project(ros::NodeHandle &nh) : occ_grid_(nh) , constraints_(nh) , traj_
     traj_.ReadCSV("skirk"); //skirk
     stateTrajectory = traj_.waypoints_;
 
-    for(int i=0 ; i < 50 ; i++){
+    itr = mpc_.horizon();
+    for(int i=0 ; i < itr ; i++){
         miniPath_.push_back( stateTrajectory.at(i) );
     }
-    itr = 50;
+    itr += itr;
     //ROS_INFO("Mini path size %d", miniPath_.size());
     
 
@@ -96,10 +97,10 @@ void project::OdomCallback(const nav_msgs::Odometry::ConstPtr &odom_msg)
 
         if(dist < 0.8){
             miniPath_.clear();
-            for(int i=itr ; i < itr+50 ; i++){
+            for(int i=itr ; i < itr+mpc_.horizon() ; i++){
                 miniPath_.push_back( stateTrajectory.at(i) );
             }
-            itr+=50;
+            itr+=mpc_.horizon();
         }
 
         mpc_.Update(current_state ,input_to_pass, miniPath_);
