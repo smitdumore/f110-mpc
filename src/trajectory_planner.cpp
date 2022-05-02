@@ -12,8 +12,7 @@ Traj_Plan::Traj_Plan(ros::NodeHandle &nh_)
     trajectories_viz_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("dwa_trajectories", 10);
     ROS_WARN("Trajectory planner object created");
     ros::Duration(2.0).sleep();
-
-    generate_traj_table(); 
+ 
 }
 
 Traj_Plan::~Traj_Plan()

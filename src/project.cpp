@@ -6,7 +6,7 @@ project::~project()
 
 }
 
-project::project(ros::NodeHandle &nh) : occ_grid_(nh) , traj_plan_(nh)
+project::project(ros::NodeHandle &nh) : occ_grid_(nh) , traj_plan_(nh) , traj_read_(nh)
 {
     std::string pose_topic, scan_topic, drive_topic;
 
@@ -27,6 +27,13 @@ project::project(ros::NodeHandle &nh) : occ_grid_(nh) , traj_plan_(nh)
 
     drive_pub_ = nh_.advertise<ackermann_msgs::AckermannDriveStamped>(drive_topic, 1);
 
+    //traj_read_.ReadCSV("skirk");
+    //global_path = traj_read_.waypoints_;
+
+    traj_read_.ReadCSV("local_traj_50");
+    traj_read_.Generate_Table();
+
+    //traj_plan_.generate_traj_table();
 }
 
 void project::ScanCallback(const sensor_msgs::LaserScan::ConstPtr &scan_msg)
@@ -53,7 +60,7 @@ void project::ScanCallback(const sensor_msgs::LaserScan::ConstPtr &scan_msg)
 void project::OdomCallback(const nav_msgs::Odometry::ConstPtr &odom_msg)
 {
     
-    traj_plan_.visualize_dwa();
+    traj_read_.Visualize();
     
 }
 

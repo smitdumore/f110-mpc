@@ -34,6 +34,7 @@ bool Trajectory::ReadCSV(string filename)
         cout << "Please run this from the root catkin_ws directory" << endl;
         return false;
     }
+    waypoints_.clear();
     for (unsigned int i = 0; i < temp.size(); i++)
     {
         float prev_x = temp[(i-1)%temp.size()].first;
@@ -51,18 +52,21 @@ bool Trajectory::ReadCSV(string filename)
     return true;
 }
 
-void Trajectory::Visualize()
+void Trajectory::Visualize()      //visualises the dwa table
 {
     std::vector<pair<float,float>> best_traj;
-    //ROS_INFO_STREAM("size of minip path:  " << waypoints_.size() );
-
-    for (int i = 0; i< waypoints_.size(); i++)
+    
+    for (int i = 0; i< local_dwa_traj_table_.size(); i++)
     {
-        std::pair<float,float> p;
-        p.first = waypoints_.at(i).x();
-        p.second = waypoints_.at(i).y();
+        int size = local_dwa_traj_table_.at(i).size();
+        for(int j=0; j < size ; j++)
+        {
+            std::pair<float,float> p;
+            p.first = waypoints_.at(j).x();
+            p.second = waypoints_.at(j).y();
         
-        best_traj.push_back(p);
+            best_traj.push_back(p);
+        }
     }
 
     std::vector<geometry_msgs::Point> best_traj_points = Visualizer::GenerateVizPoints(best_traj);
@@ -76,4 +80,19 @@ void Trajectory::Visualize()
     points_.clear();
     colors_.clear();
 
+}
+
+void Trajectory::Generate_Table()
+{
+    //500 points
+    std::vector<State> temp;
+
+    for(int i=0; i < waypoints_.size() ; i++)
+    {
+        if(i%50 == 0)
+        {   
+            local_dwa_traj_table_.push_back(temp);
+        }
+        temp.push_back(waypoints_.at(i));
+    }
 }

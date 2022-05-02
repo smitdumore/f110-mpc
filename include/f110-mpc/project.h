@@ -42,9 +42,12 @@ class project
 
         OccGrid occ_grid_;                      //occupancy grid object
         //Constraints constraints_;               //constraints object
-        //Trajectory traj_;                       //trajectory object
+        Trajectory traj_read_;                       //trajectory object
         //MPC mpc_;
         Traj_Plan traj_plan_;
+
+        std::vector<State> global_path;
+        std::vector<std::vector<State>> dwa_traj_table_;
         
         
         unsigned int inputs_idx_;               //strictly positive

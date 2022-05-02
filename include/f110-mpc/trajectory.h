@@ -32,6 +32,10 @@ class Trajectory
         vector<State> waypoints_;
         std::vector<geometry_msgs::Point> points_;
         std::vector<std_msgs::ColorRGBA> colors_;
+
+        std::vector<std::vector<State>> local_dwa_traj_table_;
+
+        void Generate_Table();
     
     private:
         
@@ -40,7 +44,6 @@ class Trajectory
         // Returns distances of waypoints in CSV trajectory relative to
         // car's position
         vector<float> GetWaypointDistances(const geometry_msgs::Pose &pose, bool inFront);
-        
 };
 
 #endif
