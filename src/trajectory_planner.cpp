@@ -20,7 +20,7 @@ Traj_Plan::~Traj_Plan()
     ROS_INFO("killing trajectory planner");
     dwa_traj_table_.clear();
 }
-
+/*
 void Traj_Plan::generate_traj_table()
 {
     dwa_traj_table_.clear();
@@ -100,5 +100,5 @@ void Traj_Plan::visualize_dwa()
     }
     ROS_INFO("publishing traj viz");
     trajectories_viz_pub_.publish(traj_list);
-
 }
+*/

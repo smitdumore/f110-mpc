@@ -52,22 +52,22 @@ bool Trajectory::ReadCSV(string filename)
     return true;
 }
 
-void Trajectory::Visualize()      //visualises the dwa table
+void Trajectory::Visualize(std::vector<pair<float,float>> best_traj)      //visualises the dwa table
 {
-    std::vector<pair<float,float>> best_traj;
+    // std::vector<pair<float,float>> best_traj;
     
-    for (int i = 0; i< local_dwa_traj_table_.size(); i++)
-    {
-        int size = local_dwa_traj_table_.at(i).size();
-        for(int j=0; j < size ; j++)
-        {
-            std::pair<float,float> p;
-            p.first = waypoints_.at(j).x();
-            p.second = waypoints_.at(j).y();
+    // for (int i = 0; i< local_dwa_traj_table_.size(); i++)
+    // {
+    //     int size = local_dwa_traj_table_.at(i).size();
+    //     for(int j=0; j < size ; j++)
+    //     {
+    //         std::pair<float,float> p;
+    //         p.first = waypoints_.at(j).x();
+    //         p.second = waypoints_.at(j).y();
         
-            best_traj.push_back(p);
-        }
-    }
+    //         best_traj.push_back(p);
+    //     }
+    // }
 
     std::vector<geometry_msgs::Point> best_traj_points = Visualizer::GenerateVizPoints(best_traj);
     std::vector<std_msgs::ColorRGBA> best_traj_colors = Visualizer::GenerateVizColors(best_traj, 1, 0, 0);
@@ -87,12 +87,12 @@ void Trajectory::Generate_Table()
     //500 points
     std::vector<State> temp;
 
-    for(int i=0; i < waypoints_.size() ; i++)
+    for(int i=1; i <= waypoints_.size() ; i++)
     {
-        if(i%50 == 0)
+        if(i%50 == 0 && i>=50)
         {   
             local_dwa_traj_table_.push_back(temp);
         }
-        temp.push_back(waypoints_.at(i));
+        temp.push_back(waypoints_.at(i-1));
     }
 }

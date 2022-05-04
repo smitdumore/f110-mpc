@@ -45,6 +45,7 @@ class project
         Trajectory traj_read_;                       //trajectory object
         //MPC mpc_;
         Traj_Plan traj_plan_;
+        Transforms transforms_;
 
         std::vector<State> global_path;
         std::vector<std::vector<State>> dwa_traj_table_;

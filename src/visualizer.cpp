@@ -31,7 +31,7 @@ std::vector<std_msgs::ColorRGBA> Visualizer::GenerateVizColors(std::vector<std::
 visualization_msgs::Marker Visualizer::GenerateList(std::vector<geometry_msgs::Point> &marker_points, std::vector<std_msgs::ColorRGBA> &marker_colors, int type, double scale_x, double scale_y, double scale_z)
 {
     visualization_msgs::Marker marker;
-    marker.header.frame_id = "map";
+    marker.header.frame_id = "base_link";
     marker.header.stamp = ros::Time();
     marker.ns = "current";
     marker.id = 0;
@@ -39,7 +39,7 @@ visualization_msgs::Marker Visualizer::GenerateList(std::vector<geometry_msgs::P
     marker.action = visualization_msgs::Marker::ADD;
     marker.pose.orientation.x = 0.0;
     marker.pose.orientation.y = 0.0;
-    marker.pose.orientation.z = 0.0;
+    marker.pose.orientation.z = -1.0;
     marker.pose.orientation.w = 1.0;
     marker.points = marker_points;
     marker.scale.x = scale_x;

@@ -161,3 +161,8 @@ int OccGrid::size()
 {
     return size_;
 }
+
+bool OccGrid::IsOccupied(float x_ind, float y_ind)
+{
+    return grid_(x_ind, y_ind);
+}

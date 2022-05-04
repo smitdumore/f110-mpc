@@ -20,6 +20,7 @@ class Traj_Plan
         ~Traj_Plan();
 
         void visualize_dwa();
+        void TrajToWorld(const geometry_msgs::Pose &);
 
     private:
         ros::Publisher trajectories_viz_pub_;
