@@ -21,12 +21,13 @@ class Traj_Plan
 
         void visualize_dwa();
         void TrajToWorld(const geometry_msgs::Pose &);
+        std::vector<std::vector<State>> generate_traj_table(); 
 
     private:
         ros::Publisher trajectories_viz_pub_;
-        std::vector<std::vector<std::vector<State>>> dwa_traj_table_;
+        std::vector<std::vector<State>> dwa_traj_table_;
 
-        void generate_traj_table(); 
+        
         
         double speed_max = 0.0;
         double steer_max = 0.0;

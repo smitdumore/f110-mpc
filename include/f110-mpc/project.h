@@ -46,6 +46,7 @@ class project
         //MPC mpc_;
         Traj_Plan traj_plan_;
         Transforms transforms_;
+        int k = 0;
 
         std::vector<State> global_path;
         std::vector<std::vector<State>> dwa_traj_table_;

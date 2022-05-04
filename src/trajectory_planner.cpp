@@ -8,6 +8,7 @@ Traj_Plan::Traj_Plan(ros::NodeHandle &nh_)
     nh_.getParam("steer_discrete", steer_discrete);
     nh_.getParam("traj_discrete", traj_discrete);
     nh_.getParam("dt", dt);
+    dt = 0.02;
 
     trajectories_viz_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("dwa_trajectories", 10);
     ROS_WARN("Trajectory planner object created");
@@ -20,56 +21,59 @@ Traj_Plan::~Traj_Plan()
     ROS_INFO("killing trajectory planner");
     dwa_traj_table_.clear();
 }
-/*
-void Traj_Plan::generate_traj_table()
+
+std::vector<std::vector<State>> Traj_Plan::generate_traj_table()
 {
     dwa_traj_table_.clear();
     double dv = speed_max/speed_discrete;
     double ds = 2*+steer_max/steer_discrete; // 2 because minus and plus both
+
     State state;
     State new_state;
     Input input;
 
     std::vector<State> trajectory;
-    std::vector<std::vector<State>> temp;
+    std::vector<std::vector<State>> temp_table;
 
     for(int i=0; i < steer_discrete+1 ; i++)
     {
-        temp.clear();
-        for(int j=0; j < speed_discrete+1 ; j++)
-        {
-            trajectory.clear();
-
+        
             double steer = -steer_max + i*ds;
-            double speed = j*dv;
+            double speed = speed_max;
+
             state.set_x(0.0);state.set_y(0.0);state.set_ori(0.0);
             new_state.set_x(0.0);new_state.set_y(0.0);new_state.set_ori(0.0);
             
             input.set_v(speed);
             input.set_steer_ang(steer);
-            trajectory.push_back(state);
+            if(i==0){trajectory.push_back(state);}
             for(int k=0; k<traj_discrete; k++)
             {
                 model_.simulate_dynamics(state, input, dt, new_state);
                 trajectory.push_back(new_state);
                 state = new_state;
             }
-            temp.push_back(trajectory);
-        }
-        dwa_traj_table_.push_back(temp);
+        
+        
+        temp_table.push_back(trajectory);
     }
 
     ROS_WARN("Generated Table");
-    ros::Duration(2.0).sleep();
+    std::cout << "table trajectories : " << temp_table.size() << "\n";
+    std::cout << "points : " << temp_table.at(1).size() << "\n";
+    ros::Duration(1.0).sleep();
+
+    dwa_traj_table_ = temp_table;
+    return temp_table;
 
 }//end of gen table
 
 void Traj_Plan::visualize_dwa()
 {
-    int low = 0.3;
-    int high = speed_max;
+    //int low = 0.3;
+    //int high = speed_max;
 
-    double dv = speed_max/speed_discrete;
+    //double dv = speed_max/speed_discrete;
     visualization_msgs::MarkerArray traj_list;
     visualization_msgs::Marker traj;
     geometry_msgs::Point p;
@@ -85,20 +89,19 @@ void Traj_Plan::visualize_dwa()
     traj.color.a = 1.0;
 
     for (int i=0; i<steer_discrete+1; i++) {
-        for (int v_ind = low; v_ind <= high; v_ind++) {
-            traj.points.clear();
-            traj.id += 9;
-            traj.color.b += 0.1;
 
-            for (int j = 0; j < dwa_traj_table_[i][v_ind].size(); j++) {
-                p.x = dwa_traj_table_[i][v_ind][j].x();
-                p.y = dwa_traj_table_[i][v_ind][j].y();
-                traj.points.push_back(p);
-            }
-            traj_list.markers.push_back(traj);
+        traj.id += 9;
+        traj.color.b += 0.1;
+        traj.points.clear();
+
+        for (int j = 0; j < dwa_traj_table_[i].size(); j++) {
+            p.x = dwa_traj_table_.at(i).at(j).x();
+            p.y =  dwa_traj_table_.at(i).at(j).y();
+            traj.points.push_back(p);
         }
+        traj_list.markers.push_back(traj);
     }
+
     ROS_INFO("publishing traj viz");
     trajectories_viz_pub_.publish(traj_list);
 }
-*/
