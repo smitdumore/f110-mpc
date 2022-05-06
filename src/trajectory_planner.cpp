@@ -48,7 +48,7 @@ std::vector<std::vector<State>> Traj_Plan::generate_traj_table()
         input.set_v(speed);
         input.set_steer_ang(steer);
 
-        for(int k=0; k<traj_discrete; k++)
+        for(int k=0; k<traj_discrete-1; k++)
         {   
             if(k==0){trajectory.push_back(state);}
             model_.simulate_dynamics(state, input, dt, new_state);

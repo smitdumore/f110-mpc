@@ -26,7 +26,7 @@ project::project(ros::NodeHandle &nh) : occ_grid_(nh) , traj_plan_(nh) , traj_re
     current_pose_.orientation.w = 1;
 
     drive_pub_ = nh_.advertise<ackermann_msgs::AckermannDriveStamped>(drive_topic, 1);
-    trajectories_viz_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("dwa_trajectories", 10);
+    trajectories_viz_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("invalid_trajectories", 10);
 
     //traj_read_.ReadCSV("skirk");
     //global_path = traj_read_.waypoints_;
@@ -61,9 +61,8 @@ void project::ScanCallback(const sensor_msgs::LaserScan::ConstPtr &scan_msg)
 
 void project::OdomCallback(const nav_msgs::Odometry::ConstPtr &odom_msg)
 {
-    //traj_plan_.visualize_dwa();
-    //return;
-
+    traj_plan_.visualize_dwa();
+    
     visualization_msgs::Marker marker; 
     marker.header.frame_id = "base_link";
     marker.header.stamp = ros::Time();
@@ -74,11 +73,12 @@ void project::OdomCallback(const nav_msgs::Odometry::ConstPtr &odom_msg)
 
     current_pose_ = odom_msg->pose.pose;
 
-    std::vector<int> invalid_traj_idx;
+    std::vector<int> valid_traj_idx;
     bool occ = false;
 
     for(int i=0; i < dwa_traj_table_.size(); i++)
     {
+        int free_points_count = 0;
         for(int j=0; j < dwa_traj_table_.at(i).size(); j++)
         {
             
@@ -104,24 +104,25 @@ void project::OdomCallback(const nav_msgs::Odometry::ConstPtr &odom_msg)
                     p.x = base_link_point.x;//world_point.first;
                     p.y = base_link_point.y;//world_point.second;
                     p.z = 0.0;
-                    marker.points.push_back(p);   
+                    marker.points.push_back(p); 
+                    free_points_count++;  
                 }
             }
         }//one traj ends
 
-        if(occ)
+        if(free_points_count == 20)
         {
-            invalid_traj_idx.push_back(i);
+            valid_traj_idx.push_back(i);
         }   
         occ = false; 
     }
 
-    for(auto it: invalid_traj_idx)
+    for(auto it: valid_traj_idx)
     {
         std::cout << it << " ";      
     }
     std::cout << "\n";
-    
+
     marker.pose.position.x = 0.0;//current_pose_.position.x;
     marker.pose.position.y = 0.0;//current_pose_.position.y;
     marker.pose.position.z = 0.0;
@@ -139,8 +140,8 @@ void project::OdomCallback(const nav_msgs::Odometry::ConstPtr &odom_msg)
     marker.color.b = 1.0;
 
     traj_read_.traj_pub_.publish(marker);
-
-    /***********************************/
+    //return;
+    /**********************************/
     visualization_msgs::MarkerArray traj_list;
     visualization_msgs::Marker traj;
     geometry_msgs::Point p;
@@ -148,23 +149,22 @@ void project::OdomCallback(const nav_msgs::Odometry::ConstPtr &odom_msg)
     traj.header.frame_id = "base_link";
     traj.id = 0;                       ////////?
     traj.type = visualization_msgs::Marker::LINE_STRIP;
-    traj.scale.x = traj.scale.y = 0.01;
-    traj.scale.z = 0.02;
+    traj.scale.x = traj.scale.y = 0.03;
+    traj.scale.z = 0.03;
     traj.action = visualization_msgs::Marker::ADD;
     traj.pose.orientation.w = 1.0;
-    traj.color.r = 1.0;
+    traj.color.g = 1.0;
     traj.color.a = 1.0;
 
 
 
-    for(int i=0; i < invalid_traj_idx.size(); i++)
+    for(int i=0; i < valid_traj_idx.size(); i++)
     {
         
         traj.id += 9;
-        traj.color.b += 0.1;
         traj.points.clear();
 
-        int curr_traj_idx = invalid_traj_idx.at(i);
+        int curr_traj_idx = valid_traj_idx.at(i);
         std::vector<State> curr_traj = dwa_traj_table_.at(curr_traj_idx);
 
         for(int j=0; j <curr_traj.size() ; j++)
@@ -178,6 +178,7 @@ void project::OdomCallback(const nav_msgs::Odometry::ConstPtr &odom_msg)
 
     ROS_INFO("publishing traj viz");
     trajectories_viz_pub_.publish(traj_list);
+    
     
 }
 
