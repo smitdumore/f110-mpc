@@ -26,7 +26,7 @@ class Trajectory
         // Loads CSV of waypoints
         bool ReadCSV(string filename);
         //visualize waypoint
-        void Visualize(std::vector<pair<float,float>> best_traj);
+        void Visualize();
 
         void TrajToWorld(const geometry_msgs::Pose &);
 

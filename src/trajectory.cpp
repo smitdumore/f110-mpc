@@ -52,28 +52,23 @@ bool Trajectory::ReadCSV(string filename)
     return true;
 }
 
-void Trajectory::Visualize(std::vector<pair<float,float>> best_traj)      //visualises the dwa table
+void Trajectory::Visualize()      //visualises the global path
 {
-    // std::vector<pair<float,float>> best_traj;
+    std::vector<pair<float,float>> traj;
     
-    // for (int i = 0; i< local_dwa_traj_table_.size(); i++)
-    // {
-    //     int size = local_dwa_traj_table_.at(i).size();
-    //     for(int j=0; j < size ; j++)
-    //     {
-    //         std::pair<float,float> p;
-    //         p.first = waypoints_.at(j).x();
-    //         p.second = waypoints_.at(j).y();
-        
-    //         best_traj.push_back(p);
-    //     }
-    // }
+    for (int i = 0; i< waypoints_.size(); i++)
+    {
+        std::pair<float,float> p;
+        p.first = waypoints_.at(i).x();
+        p.second = waypoints_.at(i).y();
+        traj.push_back(p);
+    }
 
-    std::vector<geometry_msgs::Point> best_traj_points = Visualizer::GenerateVizPoints(best_traj);
-    std::vector<std_msgs::ColorRGBA> best_traj_colors = Visualizer::GenerateVizColors(best_traj, 1, 0, 0);
+    std::vector<geometry_msgs::Point> traj_points = Visualizer::GenerateVizPoints(traj);
+    std::vector<std_msgs::ColorRGBA> traj_colors = Visualizer::GenerateVizColors(traj, 1, 0, 0);
 
-    points_.insert(points_.end(), best_traj_points.begin(), best_traj_points.end());
-    colors_.insert(colors_.end(), best_traj_colors.begin(), best_traj_colors.end());
+    points_.insert(points_.end(), traj_points.begin(), traj_points.end());
+    colors_.insert(colors_.end(), traj_colors.begin(), traj_colors.end());
 
     traj_pub_.publish( Visualizer::GenerateList(points_, colors_) );
       
@@ -81,7 +76,7 @@ void Trajectory::Visualize(std::vector<pair<float,float>> best_traj)      //visu
     colors_.clear();
 
 }
-
+/*
 void Trajectory::Generate_Table()
 {
     //500 points
@@ -96,3 +91,4 @@ void Trajectory::Generate_Table()
         temp.push_back(waypoints_.at(i-1));
     }
 }
+*/

@@ -47,10 +47,11 @@ class project
         //MPC mpc_;
         Traj_Plan traj_plan_;
         Transforms transforms_;
-        int k = 0;
-
-        std::vector<State> global_path;
+    
+        std::vector<State> global_path_;
         std::vector<std::vector<State>> dwa_traj_table_;
+        std::vector<int> valid_traj_idx_;
+        std::vector<geometry_msgs::Point> valid_end_points_;
         
         
         unsigned int inputs_idx_;               //strictly positive
