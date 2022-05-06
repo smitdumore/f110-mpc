@@ -25,7 +25,7 @@ Traj_Plan::~Traj_Plan()
 std::vector<std::vector<State>> Traj_Plan::generate_traj_table()
 {
     dwa_traj_table_.clear();
-    double dv = speed_max/speed_discrete;
+    //double dv = speed_max/speed_discrete;
     double ds = 2*+steer_max/steer_discrete; // 2 because minus and plus both
 
     State state;
@@ -37,22 +37,24 @@ std::vector<std::vector<State>> Traj_Plan::generate_traj_table()
 
     for(int i=0; i < steer_discrete+1 ; i++)
     {
-        
-            double steer = -steer_max + i*ds;
-            double speed = speed_max;
+        trajectory.clear();
 
-            state.set_x(0.0);state.set_y(0.0);state.set_ori(0.0);
-            new_state.set_x(0.0);new_state.set_y(0.0);new_state.set_ori(0.0);
+        double steer = -steer_max + i*ds;
+        double speed = speed_max;
+
+        state.set_x(0.0);state.set_y(0.0);state.set_ori(0.0);
+        new_state.set_x(0.0);new_state.set_y(0.0);new_state.set_ori(0.0);
             
-            input.set_v(speed);
-            input.set_steer_ang(steer);
-            if(i==0){trajectory.push_back(state);}
-            for(int k=0; k<traj_discrete; k++)
-            {
-                model_.simulate_dynamics(state, input, dt, new_state);
-                trajectory.push_back(new_state);
-                state = new_state;
-            }
+        input.set_v(speed);
+        input.set_steer_ang(steer);
+
+        for(int k=0; k<traj_discrete; k++)
+        {   
+            if(k==0){trajectory.push_back(state);}
+            model_.simulate_dynamics(state, input, dt, new_state);
+            trajectory.push_back(new_state);
+            state = new_state;
+        }
         
         
         temp_table.push_back(trajectory);

@@ -33,6 +33,7 @@ class project
         ros::Subscriber scan_sub_;
         ros::Subscriber odom_sub_;
         ros::Publisher drive_pub_;
+        ros::Publisher trajectories_viz_pub_;
 
         bool first_pose_estimate_ = false;
         bool first_scan_estimate_ = false;

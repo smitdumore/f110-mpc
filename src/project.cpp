@@ -26,6 +26,7 @@ project::project(ros::NodeHandle &nh) : occ_grid_(nh) , traj_plan_(nh) , traj_re
     current_pose_.orientation.w = 1;
 
     drive_pub_ = nh_.advertise<ackermann_msgs::AckermannDriveStamped>(drive_topic, 1);
+    trajectories_viz_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("dwa_trajectories", 10);
 
     //traj_read_.ReadCSV("skirk");
     //global_path = traj_read_.waypoints_;
@@ -60,97 +61,124 @@ void project::ScanCallback(const sensor_msgs::LaserScan::ConstPtr &scan_msg)
 
 void project::OdomCallback(const nav_msgs::Odometry::ConstPtr &odom_msg)
 {
-    traj_plan_.visualize_dwa();
-    return;
+    //traj_plan_.visualize_dwa();
+    //return;
+
+    visualization_msgs::Marker marker; 
+    marker.header.frame_id = "base_link";
+    marker.header.stamp = ros::Time();
+    marker.type = visualization_msgs::Marker::SPHERE_LIST;
+    //marker.id = k++;
+    marker.action = visualization_msgs::Marker::ADD;
+
+
     current_pose_ = odom_msg->pose.pose;
 
     std::vector<int> invalid_traj_idx;
-    bool occ;
-
-    visualization_msgs::Marker marker; 
-    marker.header.frame_id = "map";
-    marker.header.stamp = ros::Time();
-    marker.type = visualization_msgs::Marker::SPHERE;
-    //marker.id = k++;
-    //marker.action = visualization_msgs::Marker::ADD;
+    bool occ = false;
 
     for(int i=0; i < dwa_traj_table_.size(); i++)
     {
-        // occ = false;
-        
         for(int j=0; j < dwa_traj_table_.at(i).size(); j++)
         {
-            //ros::Duration(0.05).sleep();
+            
             geometry_msgs::Point base_link_point;
-            /*****************NO SWAP*****************/
             base_link_point.x = dwa_traj_table_.at(i).at(j).x();
             base_link_point.y = dwa_traj_table_.at(i).at(j).y();
 
-            std::pair<float, float> world_point = transforms_.CarPointToWorldPoint(base_link_point.x, base_link_point.y , current_pose_);
-            
-            //publish this world point in map frame to check this transform
+            std::pair<float, float> world_point = transforms_.CarPointToWorldPoint(base_link_point.x, base_link_point.y , current_pose_); 
             std::pair<int, int> occ_point = occ_grid_.WorldToOccupancy(world_point.first, world_point.second);
 
-            if(occ_grid_.InGrid(occ_point.first, occ_point.second))
+            if(occ_grid_.InGrid(occ_point.second, occ_point.first))
             {
-                if(occ_grid_.IsOccupied(occ_point.first, occ_point.second))
+                /****************************************************
+                 * ***********************SWAP ?? ********************
+                *********row colums terminology*********************/
+                if(occ_grid_.IsOccupied(occ_point.second, occ_point.first))
                 {   
-                    //occ = true;
-                    //publish this point
-                    
-                    
+                    occ = true;
                 }
                 else
                 {
-                    //point is free
-                    //publish this point    
-                    //convert occ to world
-                    //std::pair<float, float> pair = occ_grid_.OccupancyToWorld(occ_point.first, occ_point.second);
-                    marker.pose.position.x = world_point.first;
-                    marker.pose.position.y = world_point.second;
-                    marker.pose.position.z = 0.0;
-                    marker.pose.orientation.x = 0;
-                    marker.pose.orientation.y = 0;
-                    marker.pose.orientation.z = 0;
-                    marker.pose.orientation.w = 0;
-
-                    marker.scale.x = 0.3;
-                    marker.scale.y = 0.3;
-                    marker.scale.z = 0.3;
-                    marker.color.a = 1.0; 
-                    marker.color.r = 0.0;
-                    marker.color.g = 0.0;
-                    marker.color.b = 1.0;
-
-                    traj_read_.traj_pub_.publish(marker);
-                    ros::Duration(0.05).sleep();
-
+                    geometry_msgs::Point p;
+                    p.x = base_link_point.x;//world_point.first;
+                    p.y = base_link_point.y;//world_point.second;
+                    p.z = 0.0;
+                    marker.points.push_back(p);   
                 }
             }
-    
-        }
+        }//one traj ends
 
-        // if(occ)
-        // {
-        //     invalid_traj_idx.push_back(i);
-        // }
-
-        //traj_read_.traj_pub_.publish(marker);
-        //marker.points.clear();
-        
+        if(occ)
+        {
+            invalid_traj_idx.push_back(i);
+        }   
+        occ = false; 
     }
 
-    // for(auto it: invalid_traj_idx)
-    // {
-    //     std::cout << it << " ";      
-    // }
-    // std::cout << "\n";
-
+    for(auto it: invalid_traj_idx)
+    {
+        std::cout << it << " ";      
+    }
+    std::cout << "\n";
     
-        
-        //marker.points.clear()
-            
+    marker.pose.position.x = 0.0;//current_pose_.position.x;
+    marker.pose.position.y = 0.0;//current_pose_.position.y;
+    marker.pose.position.z = 0.0;
+    marker.pose.orientation.x = 0.0;//current_pose_.orientation.x;
+    marker.pose.orientation.y = 0.0;//current_pose_.orientation.y;
+    marker.pose.orientation.z = 0.0;//current_pose_.orientation.z;
+    marker.pose.orientation.w = 0.0;//current_pose_.orientation.w;
+    
+    marker.scale.x = 0.05;
+    marker.scale.y = 0.05;
+    marker.scale.z = 0.05;
+    marker.color.a = 1.0; 
+    marker.color.r = 0.0;
+    marker.color.g = 0.0;
+    marker.color.b = 1.0;
 
+    traj_read_.traj_pub_.publish(marker);
+
+    /***********************************/
+    visualization_msgs::MarkerArray traj_list;
+    visualization_msgs::Marker traj;
+    geometry_msgs::Point p;
+
+    traj.header.frame_id = "base_link";
+    traj.id = 0;                       ////////?
+    traj.type = visualization_msgs::Marker::LINE_STRIP;
+    traj.scale.x = traj.scale.y = 0.01;
+    traj.scale.z = 0.02;
+    traj.action = visualization_msgs::Marker::ADD;
+    traj.pose.orientation.w = 1.0;
+    traj.color.r = 1.0;
+    traj.color.a = 1.0;
+
+
+
+    for(int i=0; i < invalid_traj_idx.size(); i++)
+    {
+        
+        traj.id += 9;
+        traj.color.b += 0.1;
+        traj.points.clear();
+
+        int curr_traj_idx = invalid_traj_idx.at(i);
+        std::vector<State> curr_traj = dwa_traj_table_.at(curr_traj_idx);
+
+        for(int j=0; j <curr_traj.size() ; j++)
+        {
+            p.x = curr_traj.at(j).x();
+            p.y = curr_traj.at(j).y();
+            traj.points.push_back(p);
+        }
+        traj_list.markers.push_back(traj);
+    }
+
+    ROS_INFO("publishing traj viz");
+    trajectories_viz_pub_.publish(traj_list);
+    
 }
 
 Input project::GetNextInput()
