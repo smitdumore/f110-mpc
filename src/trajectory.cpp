@@ -5,13 +5,14 @@ using namespace std;
 Trajectory::Trajectory(ros::NodeHandle &nh)
 {
     traj_pub_ = nh.advertise<visualization_msgs::Marker>("trajectory", 1);
+
+    nh.getParam("/lookahead", lookahead);
 }
 
 Trajectory::~Trajectory()
 {
     //ROS_INFO("Killing trajectory");
 }
-
 
 bool Trajectory::ReadCSV(string filename)
 {
@@ -74,21 +75,36 @@ void Trajectory::Visualize()      //visualises the global path
       
     points_.clear();
     colors_.clear();
-
 }
-/*
-void Trajectory::Generate_Table()
+
+int Trajectory::get_best_global_idx(geometry_msgs::Pose current_pose)
 {
-    //500 points
-    std::vector<State> temp;
+    //csv points are in map frame
+    //current pose is also in map frame
+    
+    //need to transform points in base link to check front or back
 
-    for(int i=1; i <= waypoints_.size() ; i++)
-    {
-        if(i%50 == 0 && i>=50)
-        {   
-            local_dwa_traj_table_.push_back(temp);
+    float minDistance = numeric_limits<float>::max();
+    int closest_idx = -1;
+    
+    geometry_msgs::TransformStamped world_to_base = transforms_.WorldToCarTransform(current_pose);
+
+    for(int i=0; i < waypoints_.size(); i++)
+    {   
+        pair<float, float> point;
+        point.first = waypoints_.at(i).x();
+        point.second = waypoints_.at(i).y();
+        pair<float, float> transformedPoint = transforms_.TransformPoint(point, world_to_base);
+        
+        if(transformedPoint.first < 0){continue;} // behind base link // x is nagative
+        double distance = pow( pow(transformedPoint.first,2) + pow(transformedPoint.second,2), 0.5);
+        double lookahead_diff = std::abs(distance - lookahead);
+        if(lookahead_diff < minDistance)
+        {
+                minDistance = lookahead_diff;
+                closest_idx = i;
         }
-        temp.push_back(waypoints_.at(i-1));
     }
+
+    return closest_idx;
 }
-*/

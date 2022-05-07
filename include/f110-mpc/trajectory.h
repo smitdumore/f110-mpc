@@ -22,30 +22,29 @@ class Trajectory
         ~Trajectory();
 
         // Converts trajectory of State objects to pairs of X,Y coordinates
-        vector<pair<float,float>> GetPairPoints();
+        //vector<pair<float,float>> GetPairPoints();
         // Loads CSV of waypoints
         bool ReadCSV(string filename);
         //visualize waypoint
         void Visualize();
+        //
+        int get_best_global_idx(geometry_msgs::Pose );
 
-        void TrajToWorld(const geometry_msgs::Pose &);
+        //void TrajToWorld(const geometry_msgs::Pose &);
 
         ros::Publisher traj_pub_;
         vector<State> waypoints_;
         std::vector<geometry_msgs::Point> points_;
         std::vector<std_msgs::ColorRGBA> colors_;
 
-        std::vector<std::vector<State>> local_dwa_traj_table_;
-
-        void Generate_Table();
-    
     private:
         
         float lookahead;
 
-        // Returns distances of waypoints in CSV trajectory relative to
-        // car's position
-        vector<float> GetWaypointDistances(const geometry_msgs::Pose &pose, bool inFront);
+        Transforms transforms_;
+
+        // Returns distances of waypoints in CSV trajectory relative to car's position
+        //vector<float> GetWaypointDistances(const geometry_msgs::Pose &pose, bool inFront);
 };
 
 #endif

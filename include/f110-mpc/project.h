@@ -34,6 +34,8 @@ class project
         ros::Subscriber odom_sub_;
         ros::Publisher drive_pub_;
         ros::Publisher trajectories_viz_pub_;
+        ros::Publisher global_point_pub_;
+        ros::Publisher best_traj_viz_pub_;
 
         bool first_pose_estimate_ = false;
         bool first_scan_estimate_ = false;
@@ -52,6 +54,8 @@ class project
         std::vector<std::vector<State>> dwa_traj_table_;
         std::vector<int> valid_traj_idx_;
         std::vector<geometry_msgs::Point> valid_end_points_;
+        int best_global_idx_ = -1;
+        int best_traj_idx_ = -1;
         
         
         unsigned int inputs_idx_;               //strictly positive

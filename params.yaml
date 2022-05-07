@@ -55,3 +55,5 @@ speed_discrete: 40
 steer_discrete: 50    ##
 steer_max: 0.4
 traj_discrete: 20
+
+lookahead: 2.0 ## make sure greater than dwa trajectories
