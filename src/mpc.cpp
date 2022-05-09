@@ -136,7 +136,7 @@ void MPC::Update(State current_state , Input input, std::vector<State> &desired_
     }
     else
     {   
-        ROS_ERROR("solved--------------");
+        //ROS_ERROR("solved--------------");
         QPsolution_ = solver_.getSolution();
         UpdateSolvedTrajectory();
     }

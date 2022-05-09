@@ -8,7 +8,7 @@ Traj_Plan::Traj_Plan(ros::NodeHandle &nh_)
     nh_.getParam("steer_discrete", steer_discrete);
     nh_.getParam("traj_discrete", traj_discrete);
     nh_.getParam("dt", dt);
-    dt = 0.02;
+    //dt = 0.02;
 
     trajectories_viz_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("dwa_trajectories", 10);
     best_traj_viz_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("best_trajectory", 10);
@@ -82,7 +82,7 @@ void Traj_Plan::visualize_dwa()
     geometry_msgs::Point p;
 
     traj.header.frame_id = "base_link";
-    traj.id = 0;                       ////////?
+    traj.id = 0;
     traj.type = visualization_msgs::Marker::LINE_STRIP;
     traj.scale.x = traj.scale.y = 0.01;
     traj.scale.z = 0.02;
@@ -118,10 +118,10 @@ void Traj_Plan::Visualize_best_trajectory(int best_trajectory_idx)
     best_traj.header.frame_id = "base_link";
     best_traj.id = 1;
     best_traj.type = visualization_msgs::Marker::LINE_STRIP;
-    best_traj.scale.x = best_traj.scale.y = 0.02;
+    best_traj.scale.x = best_traj.scale.y = 0.04;
     best_traj.action = visualization_msgs::Marker::ADD;
     best_traj.pose.orientation.w = 1.0;
-    best_traj.color.r = 1.0;
+    best_traj.color.g = 1.0;
     best_traj.color.a = 1.0;
 
     std::vector<State> best_trajectory = dwa_traj_table_.at(best_trajectory_idx);
@@ -134,7 +134,7 @@ void Traj_Plan::Visualize_best_trajectory(int best_trajectory_idx)
     }
     best_list.markers.push_back(best_traj);
 
-    best_traj_viz_pub_.publish(best_list);           //publihs best trajectory
+    best_traj_viz_pub_.publish(best_list);           //publish best trajectory
 
 }
 

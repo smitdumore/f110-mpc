@@ -42,19 +42,27 @@ class project
         geometry_msgs::Pose current_pose_;
         std::pair<float, float> occ_offset_;
 
-        OccGrid occ_grid_;                      //occupancy grid object
-        //Constraints constraints_;               //constraints object
-        Trajectory traj_read_;                       //trajectory object
-        //MPC mpc_;
+        //all objects
+        OccGrid occ_grid_;                      
+        Constraints constraints_;               
+        Trajectory traj_read_;                
+        MPC mpc_;
         Traj_Plan traj_plan_;
         Transforms transforms_;
+
+        //mpc specific
+        std::vector<Input> current_inputs_;
     
+        //dwa specific
         std::vector<State> global_path_;
         std::vector<std::vector<State>> dwa_traj_table_;
         std::vector<int> valid_traj_idx_;
         std::vector<geometry_msgs::Point> valid_end_points_;
         int best_global_idx_ = -1;
         int best_traj_idx_ = -1;
+        bool reached_ = false;
+        bool get_mini_path_ = false;
+        std::vector<State> miniPath_;
         
         
         unsigned int inputs_idx_;               //strictly positive

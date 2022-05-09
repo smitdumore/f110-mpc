@@ -10,7 +10,7 @@ scan_topic: "/scan"
 drive_topic: "/drive"
 
 horizon: 30
-dt: 0.04
+dt: 0.01
 
 #occ_grid
 occ_size: 10
@@ -54,6 +54,6 @@ buffer: 3
 speed_discrete: 40
 steer_discrete: 19    ##
 steer_max: 0.4
-traj_discrete: 20
+traj_discrete: 50
 
-lookahead: 2.0 ## make sure greater than dwa trajectories
+lookahead: 2.5 ## make sure greater than dwa trajectories

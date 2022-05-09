@@ -6,7 +6,7 @@ project::~project()
 
 }
 
-project::project(ros::NodeHandle &nh) : occ_grid_(nh) , traj_plan_(nh) , traj_read_(nh)
+project::project(ros::NodeHandle &nh) : occ_grid_(nh) , traj_plan_(nh) , traj_read_(nh) , constraints_(nh) , mpc_(nh)
 {
     std::string pose_topic, scan_topic, drive_topic;
 
@@ -27,8 +27,6 @@ project::project(ros::NodeHandle &nh) : occ_grid_(nh) , traj_plan_(nh) , traj_re
 
     drive_pub_ = nh_.advertise<ackermann_msgs::AckermannDriveStamped>(drive_topic, 1);
     trajectories_viz_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("valid_trajectories", 10);
-    //best_traj_viz_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("best_trajectory", 10);
-    //valid_end_pub_ = nh_.advertise<visualization_msgs::Marker>("valid_end_point", 10);
 
     traj_read_.ReadCSV("skirk");
     global_path_ = traj_read_.waypoints_;
@@ -39,33 +37,39 @@ project::project(ros::NodeHandle &nh) : occ_grid_(nh) , traj_plan_(nh) , traj_re
 
 void project::ScanCallback(const sensor_msgs::LaserScan::ConstPtr &scan_msg)
 {
-    // if (first_pose_estimate_)
-    // {
-    //     if (!first_scan_estimate_)
-    //     {
+    if (first_pose_estimate_)
+    {
+         if (!first_scan_estimate_)
+         {
              first_scan_estimate_ = true;
-             //mpc_.UpdateScan(scan_msg);
-    //     }
-        //
-        //State state(0.0,0.0,0.0);
-        //sensor_msgs::LaserScan scan_msg_ = *scan_msg;
+             mpc_.UpdateScan(scan_msg);
+         }
+        
+        State state(0.0,0.0,0.0);
+        sensor_msgs::LaserScan scan_msg_ = *scan_msg;
 
-        //constraints_.FindHalfSpaces(state , scan_msg_);
+        constraints_.FindHalfSpaces(state , scan_msg_);
 
         occ_grid_.FillOccGrid(current_pose_, scan_msg);
         occ_grid_.Visualize();
-    //}
+    }
 }
 
 
 void project::OdomCallback(const nav_msgs::Odometry::ConstPtr &odom_msg)
 {
-    //traj_plan_.visualize_dwa();       //visulaize all offline dwa trajs
+    traj_plan_.visualize_dwa();       //visulaize all offline dwa trajs
     traj_read_.Visualize();             //visualize global path csv
     
     current_pose_ = odom_msg->pose.pose;
+    if (!first_pose_estimate_)
+    {
+        first_pose_estimate_ = true;
+    }
+
+    if( get_mini_path_ == false ){
+
     geometry_msgs::Point p;
-    
     for(int i=0; i < dwa_traj_table_.size(); i++)
     {
         int free_points_count = 0;
@@ -115,7 +119,7 @@ void project::OdomCallback(const nav_msgs::Odometry::ConstPtr &odom_msg)
     best_global_idx_ = traj_read_.get_best_global_idx(current_pose_);
 
     // DWA COST //  
-    double min_dist =  numeric_limits<int>::max();
+    double min_dist =  numeric_limits<double>::max();
 
     for(int it=0 ; it < valid_end_points_.size(); it++)
     {
@@ -128,19 +132,71 @@ void project::OdomCallback(const nav_msgs::Odometry::ConstPtr &odom_msg)
         }    
     }   
  
-    valid_end_points_.clear();
+    
     
     //IMP
     int best_trajectory_idx = valid_traj_idx_.at(best_traj_idx_);
+    //miniPath_ = dwa_traj_table_.at(best_trajectory_idx);
+
+    //convert all minipaths to map
+    for(int i=0 ; i < dwa_traj_table_.at(best_trajectory_idx).size(); i++){
+        std::pair<float, float> world_pair = transforms_.CarPointToWorldPoint(dwa_traj_table_.at(best_trajectory_idx).at(i).x(), dwa_traj_table_.at(best_trajectory_idx).at(i).y(), current_pose_);
+        State state(world_pair.first, world_pair.second, 0.0);       ////// zero , use traj steer ang  ??
+        miniPath_.push_back(state);
+    }
 
     traj_plan_.Visualize_best_trajectory(best_trajectory_idx);
 
     valid_traj_idx_.clear();
+    valid_end_points_.clear();
 
-    //follow this with mpc 
-    // use a reached variable 
-    // 
-    
+    get_mini_path_ = true;
+
+
+    } // not reached
+    else{
+    // MPC
+
+    float current_angle = Transforms::GetCarOrientation(current_pose_);
+    State current_state(current_pose_.position.x, current_pose_.position.y, current_angle);
+    ackermann_msgs::AckermannDriveStamped drive_msg;
+
+    if (first_scan_estimate_)
+    {
+        Input input_to_pass = GetNextInput();
+        input_to_pass.set_v(4.5);
+
+        std::pair<float , float> end_point;
+        end_point.first = miniPath_.back().x();
+        end_point.second = miniPath_.back().y();
+        
+        std::pair<float , float> car_point;
+        car_point.first = current_pose_.position.x;
+        car_point.second = current_pose_.position.y;
+
+        float dist = Transforms::CalcDist(car_point , end_point);
+
+        if(dist < 0.8){
+            get_mini_path_ = false;
+            miniPath_.clear();
+        }
+        //size of minipath should be 50
+        mpc_.Update(current_state ,input_to_pass, miniPath_);
+
+        current_inputs_ = mpc_.solved_trajectory();
+
+        mpc_.Visualize();
+
+        ackermann_msgs::AckermannDriveStamped drive_msg;
+        drive_msg.header.stamp = ros::Time::now();
+        drive_msg.drive.speed = current_inputs_.at(0).v();
+        drive_msg.drive.steering_angle = current_inputs_.at(0).steer_ang();
+        drive_pub_.publish(drive_msg);
+
+        ROS_INFO("floowoinf");
+    } 
+
+    }//end else   
 }
 
 Input project::GetNextInput()
