@@ -102,7 +102,6 @@ void project::OdomCallback(const nav_msgs::Odometry::ConstPtr &odom_msg)
             p.x = world_pair.first;
             p.y = world_pair.second;
             valid_end_points_.push_back(p);
-            //ROS_INFO("%d", i);
         }   
     }
 
@@ -112,47 +111,6 @@ void project::OdomCallback(const nav_msgs::Odometry::ConstPtr &odom_msg)
         return;
     }
     
-    /* not used
-    visualization_msgs::MarkerArray traj_list;
-    visualization_msgs::Marker traj;
-    geometry_msgs::Point p;
-
-    traj.header.frame_id = "base_link";
-    traj.id = 0;
-    traj.type = visualization_msgs::Marker::LINE_STRIP;
-    traj.scale.x = traj.scale.y = 0.03;
-    traj.scale.z = 0.03;
-    traj.action = visualization_msgs::Marker::ADD;
-    traj.pose.orientation.w = 1.0;
-    traj.color.g = 1.0;
-    traj.color.a = 1.0;
-
-    for(int i=0; i < valid_traj_idx_.size(); i++)
-    {
-        
-        traj.id += 9;
-        traj.points.clear();
-
-        int curr_traj_idx = valid_traj_idx_.at(i);
-        std::vector<State> curr_traj = dwa_traj_table_.at(curr_traj_idx);
-
-        for(int j=0; j <curr_traj.size() ; j++)
-        {
-            p.x = curr_traj.at(j).x();
-            p.y = curr_traj.at(j).y();
-            traj.points.push_back(p);
-            if(j== curr_traj.size()-1)
-            {
-                //end points of each traj
-                valid_end_points_.push_back(p);
-            }
-        }
-        traj_list.markers.push_back(traj);
-    }
-
-    trajectories_viz_pub_.publish(traj_list);           //publishing all valid trajectories
-    */
-
     // FOLLOW POINT //
     best_global_idx_ = traj_read_.get_best_global_idx(current_pose_);
 
@@ -161,7 +119,6 @@ void project::OdomCallback(const nav_msgs::Odometry::ConstPtr &odom_msg)
 
     for(int it=0 ; it < valid_end_points_.size(); it++)
     {
-        //both are in map
         double dist = pow (pow(valid_end_points_.at(it).x - global_path_.at(best_global_idx_).x() , 2) +
                           pow(valid_end_points_.at(it).y - global_path_.at(best_global_idx_).y() , 2), 0.5);
 
