@@ -29,11 +29,13 @@ project::project(ros::NodeHandle &nh) : occ_grid_(nh) , traj_plan_(nh) , traj_re
     trajectories_viz_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("valid_trajectories", 10);
     global_point_pub_ = nh_.advertise<visualization_msgs::Marker>("global_point", 10);
     best_traj_viz_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("best_trajectory", 10);
+    valid_end_pub_ = nh_.advertise<visualization_msgs::Marker>("valid_end_point", 10);
 
     traj_read_.ReadCSV("skirk");
     global_path_ = traj_read_.waypoints_;
 
     dwa_traj_table_ = traj_plan_.generate_traj_table();
+    //all dwa points are in base link 
 }
 
 void project::ScanCallback(const sensor_msgs::LaserScan::ConstPtr &scan_msg)
@@ -60,9 +62,10 @@ void project::ScanCallback(const sensor_msgs::LaserScan::ConstPtr &scan_msg)
 void project::OdomCallback(const nav_msgs::Odometry::ConstPtr &odom_msg)
 {
     //traj_plan_.visualize_dwa();       //visulaize all offline dwa trajs
-    traj_read_.Visualize();        //visualize global path csv
+    traj_read_.Visualize();             //visualize global path csv
     
     current_pose_ = odom_msg->pose.pose;
+    geometry_msgs::Point p;
     
     for(int i=0; i < dwa_traj_table_.size(); i++)
     {
@@ -90,19 +93,49 @@ void project::OdomCallback(const nav_msgs::Odometry::ConstPtr &odom_msg)
                 }
             }
         }//one traj ends
-
-        if(free_points_count == 20)//num of discrete trajs
+        
+        if(free_points_count == dwa_traj_table_.at(i).size())//num of discrete trajs
         {
             valid_traj_idx_.push_back(i);
-        }    
+            geometry_msgs::Point p;
+            //converting all dwa base link END points to map frame
+            std::pair<float, float> world_pair = transforms_.CarPointToWorldPoint(dwa_traj_table_.at(i).back().x(), dwa_traj_table_.at(i).back().y(), current_pose_);
+            p.x = world_pair.first;
+            p.y = world_pair.second;
+            valid_end_points_.push_back(p);
+            //ROS_INFO("%d", i);
+        }   
     }
 
-    // for(auto it: valid_traj_idx_)
-    // {
-    //     std::cout << it << " ";     //these indices are wrt dwa_traj_table_  
-    // }
-    // std::cout << "\n";
 
+
+    visualization_msgs::Marker end_marker;
+    end_marker.header.frame_id = "map";
+    end_marker.id = 1;
+    end_marker.type = visualization_msgs::Marker::SPHERE_LIST;
+    end_marker.scale.x = end_marker.scale.y = end_marker.scale.z = 0.1;
+    end_marker.color.b = 1.0;
+    end_marker.color.a = 1.0;
+
+    if(valid_end_points_.size() == 0)
+    {
+        ROS_ERROR("NO VALID TRAJS");
+        return;
+    }
+    // all valid end points are in map frame
+    for(int i=0 ; i < valid_end_points_.size(); i++)
+    {
+        p = valid_end_points_.at(i);
+        end_marker.points.push_back(p);
+    }
+
+    valid_end_pub_.publish(end_marker);
+    end_marker.points.clear();
+    //ROS_WARN("valid end point size: %d", valid_end_points_.size()); 
+    
+    //all end points are now in map
+    
+    /* not used
     visualization_msgs::MarkerArray traj_list;
     visualization_msgs::Marker traj;
     geometry_msgs::Point p;
@@ -141,7 +174,7 @@ void project::OdomCallback(const nav_msgs::Odometry::ConstPtr &odom_msg)
     }
 
     trajectories_viz_pub_.publish(traj_list);           //publishing all valid trajectories
-    
+    */
     // FOLLOW POINT //
     best_global_idx_ = traj_read_.get_best_global_idx(current_pose_);
 
@@ -161,24 +194,25 @@ void project::OdomCallback(const nav_msgs::Odometry::ConstPtr &odom_msg)
     global_point_pub_.publish(global_marker);       //publish best follow point
 
     // DWA COST //
+    
+    double min_dist =  numeric_limits<int>::max();
 
-    int min_dist =  numeric_limits<int>::max();
-
-    for(int i=0 ; i < valid_end_points_.size(); i++)
+    for(int it=0 ; it < valid_end_points_.size(); it++)
     {
-        double dist = pow (pow(valid_end_points_.at(i).x - global_path_.at(best_global_idx_).x() , 2) +
-                          pow(valid_end_points_.at(i).y - global_path_.at(best_global_idx_).y() , 2), 0.5);
+        //both are in map
+        double dist = pow (pow(valid_end_points_.at(it).x - global_path_.at(best_global_idx_).x() , 2) +
+                          pow(valid_end_points_.at(it).y - global_path_.at(best_global_idx_).y() , 2), 0.5);
 
-        dist = abs(dist);
-        
         if(dist < min_dist){
             min_dist = dist;
-            best_traj_idx_ = i;      
-        } 
-    }
-
+            best_traj_idx_ = it;     // in valid end point vector  
+        }    
+    }   
+ 
+    valid_end_points_.clear();
+    
     //best_traj_idx_ is wrt valid_traj_idx_
-
+    
     visualization_msgs::MarkerArray best_list;
     visualization_msgs::Marker best_traj;
     geometry_msgs::Point point;
@@ -186,16 +220,16 @@ void project::OdomCallback(const nav_msgs::Odometry::ConstPtr &odom_msg)
     best_traj.header.frame_id = "base_link";
     best_traj.id = 1;
     best_traj.type = visualization_msgs::Marker::LINE_STRIP;
-    best_traj.scale.x = traj.scale.y = 0.03;
-    best_traj.scale.z = 0.03;
+    best_traj.scale.x = best_traj.scale.y = 0.02;
     best_traj.action = visualization_msgs::Marker::ADD;
     best_traj.pose.orientation.w = 1.0;
     best_traj.color.r = 1.0;
     best_traj.color.a = 1.0;
 
+    //IMP
     int best_trajectory_idx = valid_traj_idx_.at(best_traj_idx_);
-
     vector<State> best_trajectory = dwa_traj_table_.at(best_trajectory_idx);
+    
 
     for(int i=0; i< best_trajectory.size(); i++)
     {
@@ -205,10 +239,9 @@ void project::OdomCallback(const nav_msgs::Odometry::ConstPtr &odom_msg)
     }
     best_list.markers.push_back(best_traj);
 
-
     best_traj_viz_pub_.publish(best_list);           //publihs best trajectory
 
-    //ROS_INFO("callback");
+    valid_traj_idx_.clear();
     
 }
 

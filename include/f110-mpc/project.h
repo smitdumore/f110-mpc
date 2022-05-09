@@ -36,6 +36,7 @@ class project
         ros::Publisher trajectories_viz_pub_;
         ros::Publisher global_point_pub_;
         ros::Publisher best_traj_viz_pub_;
+        ros::Publisher valid_end_pub_;
 
         bool first_pose_estimate_ = false;
         bool first_scan_estimate_ = false;
