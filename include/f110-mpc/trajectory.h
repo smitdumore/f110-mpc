@@ -33,6 +33,8 @@ class Trajectory
         //void TrajToWorld(const geometry_msgs::Pose &);
 
         ros::Publisher traj_pub_;
+        ros::Publisher global_point_pub_;
+        
         vector<State> waypoints_;
         std::vector<geometry_msgs::Point> points_;
         std::vector<std_msgs::ColorRGBA> colors_;

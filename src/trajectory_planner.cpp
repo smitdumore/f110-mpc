@@ -11,6 +11,7 @@ Traj_Plan::Traj_Plan(ros::NodeHandle &nh_)
     dt = 0.02;
 
     trajectories_viz_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("dwa_trajectories", 10);
+    best_traj_viz_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("best_trajectory", 10);
     ROS_WARN("Trajectory planner object created");
     ros::Duration(2.0).sleep();
  
@@ -107,3 +108,33 @@ void Traj_Plan::visualize_dwa()
     ROS_INFO("publishing traj viz");
     trajectories_viz_pub_.publish(traj_list);
 }
+
+void Traj_Plan::Visualize_best_trajectory(int best_trajectory_idx)
+{
+    visualization_msgs::MarkerArray best_list;
+    visualization_msgs::Marker best_traj;
+    geometry_msgs::Point point;
+
+    best_traj.header.frame_id = "base_link";
+    best_traj.id = 1;
+    best_traj.type = visualization_msgs::Marker::LINE_STRIP;
+    best_traj.scale.x = best_traj.scale.y = 0.02;
+    best_traj.action = visualization_msgs::Marker::ADD;
+    best_traj.pose.orientation.w = 1.0;
+    best_traj.color.r = 1.0;
+    best_traj.color.a = 1.0;
+
+    std::vector<State> best_trajectory = dwa_traj_table_.at(best_trajectory_idx);
+
+    for(int i=0; i< best_trajectory.size(); i++)
+    {
+            point.x = best_trajectory.at(i).x();
+            point.y = best_trajectory.at(i).y();
+            best_traj.points.push_back(point);
+    }
+    best_list.markers.push_back(best_traj);
+
+    best_traj_viz_pub_.publish(best_list);           //publihs best trajectory
+
+}
+

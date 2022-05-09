@@ -22,9 +22,12 @@ class Traj_Plan
         void visualize_dwa();
         void TrajToWorld(const geometry_msgs::Pose &);
         std::vector<std::vector<State>> generate_traj_table(); 
+        void Visualize_best_trajectory(int );
 
     private:
         ros::Publisher trajectories_viz_pub_;
+        ros::Publisher best_traj_viz_pub_;
+        
         std::vector<std::vector<State>> dwa_traj_table_;
 
         

@@ -5,6 +5,7 @@ using namespace std;
 Trajectory::Trajectory(ros::NodeHandle &nh)
 {
     traj_pub_ = nh.advertise<visualization_msgs::Marker>("trajectory", 1);
+    global_point_pub_ = nh.advertise<visualization_msgs::Marker>("global_point", 10);
 
     nh.getParam("/lookahead", lookahead);
 }
@@ -106,5 +107,23 @@ int Trajectory::get_best_global_idx(geometry_msgs::Pose current_pose)
         }
     }
 
+    visualization_msgs::Marker global_marker;
+    global_marker.id = 1;
+    global_marker.header.frame_id = "map";
+    global_marker.type = visualization_msgs::Marker::SPHERE;
+    global_marker.scale.x = global_marker.scale.y = global_marker.scale.z = 0.2;
+    global_marker.color.b = global_marker.color.r = 1.0;
+    global_marker.color.g = 0.0;
+    global_marker.color.a = 1.0;
+
+    global_marker.pose.position.x = waypoints_.at(closest_idx).x();
+    global_marker.pose.position.y = waypoints_.at(closest_idx).y();
+    global_marker.pose.position.z = 0;
+
+    global_point_pub_.publish(global_marker);       //publish best follow point
+
     return closest_idx;
 }
+
+
+
