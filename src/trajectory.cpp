@@ -112,8 +112,8 @@ int Trajectory::get_best_global_idx(geometry_msgs::Pose current_pose)
     global_marker.header.frame_id = "map";
     global_marker.type = visualization_msgs::Marker::SPHERE;
     global_marker.scale.x = global_marker.scale.y = global_marker.scale.z = 0.2;
-    global_marker.color.b = global_marker.color.r = 1.0;
-    global_marker.color.g = 0.0;
+    global_marker.color.b = 1.0;
+    global_marker.color.g = global_marker.color.r = 0.0;
     global_marker.color.a = 1.0;
 
     global_marker.pose.position.x = waypoints_.at(closest_idx).x();

@@ -52,7 +52,8 @@ class project
 
         //mpc specific
         std::vector<Input> current_inputs_;
-    
+        unsigned int inputs_idx_;
+
         //dwa specific
         std::vector<State> global_path_;
         std::vector<std::vector<State>> dwa_traj_table_;
@@ -64,14 +65,14 @@ class project
         bool get_mini_path_ = false;
         std::vector<State> miniPath_;
         
-        
-        unsigned int inputs_idx_;               //strictly positive
+        //methods
 
         void ScanCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg);
 
         void OdomCallback(const nav_msgs::Odometry::ConstPtr &odom_msg);
 
-        // Used to provide the next input for /drive
+        void DriveLoop();
+
         Input GetNextInput();
 };  
 

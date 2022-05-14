@@ -52,8 +52,8 @@ fov_divider: 1.5
 buffer: 3
 
 speed_discrete: 40
-steer_discrete: 19    ##
+steer_discrete: 30    ##
 steer_max: 0.4
 traj_discrete: 50
 
-lookahead: 2.5 ## make sure greater than dwa trajectories
+lookahead: 2.0 ## make sure greater than dwa trajectories

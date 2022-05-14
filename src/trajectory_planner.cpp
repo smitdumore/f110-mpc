@@ -84,8 +84,7 @@ void Traj_Plan::visualize_dwa()
     traj.header.frame_id = "base_link";
     traj.id = 0;
     traj.type = visualization_msgs::Marker::LINE_STRIP;
-    traj.scale.x = traj.scale.y = 0.01;
-    traj.scale.z = 0.02;
+    traj.scale.x = traj.scale.y = traj.scale.z = 0.04;
     traj.action = visualization_msgs::Marker::ADD;
     traj.pose.orientation.w = 1.0;
     traj.color.r = 1.0;
@@ -118,7 +117,7 @@ void Traj_Plan::Visualize_best_trajectory(int best_trajectory_idx)
     best_traj.header.frame_id = "base_link";
     best_traj.id = 1;
     best_traj.type = visualization_msgs::Marker::LINE_STRIP;
-    best_traj.scale.x = best_traj.scale.y = 0.04;
+    best_traj.scale.x = best_traj.scale.y = 0.08;
     best_traj.action = visualization_msgs::Marker::ADD;
     best_traj.pose.orientation.w = 1.0;
     best_traj.color.g = 1.0;

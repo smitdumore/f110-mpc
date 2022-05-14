@@ -28,6 +28,9 @@ project::project(ros::NodeHandle &nh) : occ_grid_(nh) , traj_plan_(nh) , traj_re
     drive_pub_ = nh_.advertise<ackermann_msgs::AckermannDriveStamped>(drive_topic, 1);
     trajectories_viz_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("valid_trajectories", 10);
 
+    std::thread t(&project::DriveLoop, this);
+    t.detach();
+
     traj_read_.ReadCSV("skirk");
     global_path_ = traj_read_.waypoints_;
 
@@ -165,7 +168,7 @@ void project::OdomCallback(const nav_msgs::Odometry::ConstPtr &odom_msg)
     {
         Input input_to_pass = GetNextInput();
         input_to_pass.set_v(4.5);
-
+        
         std::pair<float , float> end_point;
         end_point.first = miniPath_.back().x();
         end_point.second = miniPath_.back().y();
@@ -176,41 +179,61 @@ void project::OdomCallback(const nav_msgs::Odometry::ConstPtr &odom_msg)
 
         float dist = Transforms::CalcDist(car_point , end_point);
 
-        if(dist < 0.8){
+        if(dist < 1.98){
             get_mini_path_ = false;
             miniPath_.clear();
+            //getting new best dwa traj
         }
-        //size of minipath should be 50
+        //size of minipath should be equal to horizon
         mpc_.Update(current_state ,input_to_pass, miniPath_);
 
         current_inputs_ = mpc_.solved_trajectory();
+        inputs_idx_ = 0; //new soln calculated
 
         mpc_.Visualize();
-
-        ackermann_msgs::AckermannDriveStamped drive_msg;
-        drive_msg.header.stamp = ros::Time::now();
-        drive_msg.drive.speed = current_inputs_.at(0).v();
-        drive_msg.drive.steering_angle = current_inputs_.at(0).steer_ang();
-        drive_pub_.publish(drive_msg);
 
         ROS_INFO("floowoinf");
     } 
 
     }//end else   
+
+
+
+    //check collision on the global path waypoint
+    // if it is colliding 
+    // check in inner lane is available
+    // if not switch to outer lane (check point atleast 1 lookahead away in csv points of outer lane)
+    // keeping checking if switching  to inner lane is possible
+    // maintain of global variable to switch betweern lane csv point vectors  
 }
 
 Input project::GetNextInput()
 {   
-    //initially the size of current_inputs_ should be zero
-    // inputs_idx_ intially has garbage value ??
-    //debug both of these with ROS LOGS
+    if (inputs_idx_ >= current_inputs_.size())
+    {
+        ROS_ERROR("ran out of QP soln");
+        return Input(0.5,0.0);
+    }
+    return current_inputs_[inputs_idx_];
+}
 
-    //if (inputs_idx_ >= current_inputs_.size())
-    //{
-        return Input(0.5,-0.05);           //v and steering
-    //}
-
-    // current_inputs_ is a vector of inputs
-    //return current_inputs_[inputs_idx_];             //returns the input object at a certain index
+void project::DriveLoop()
+{
+    while (true)
+    {
+        if (first_pose_estimate_ && first_scan_estimate_)
+        {
+            ackermann_msgs::AckermannDriveStamped drive_msg;
+            Input input = GetNextInput();
+            
+            drive_msg.header.stamp = ros::Time::now();
+            drive_msg.drive.speed = input.v();
+            drive_msg.drive.steering_angle = input.steer_ang();
+            drive_pub_.publish(drive_msg);
+            int dt_ms = 2*mpc_.dt()*1000;
+            inputs_idx_++;
+            std::this_thread::sleep_for(std::chrono::milliseconds(dt_ms));
+        }
+    }
 }
 
