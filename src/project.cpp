@@ -6,13 +6,14 @@ project::~project()
 
 }
 
-project::project(ros::NodeHandle &nh) : occ_grid_(nh) , constraints_(nh) , traj_(nh) , mpc_(nh)
+project::project(ros::NodeHandle &nh) : occ_grid_(nh) , constraints_(nh) , traj_read_(nh) , mpc_(nh)
 {
     std::string pose_topic, scan_topic, drive_topic;
 
     nh_.getParam("/pose_topic", pose_topic);
     nh_.getParam("/scan_topic", scan_topic);
     nh_.getParam("/drive_topic", drive_topic);
+    nh_.getParam("horizon", horizon_);
 
     ros::NodeHandle nh_(nh);
     odom_sub_ = nh_.subscribe(pose_topic, 1, &project::OdomCallback, this);
@@ -27,15 +28,17 @@ project::project(ros::NodeHandle &nh) : occ_grid_(nh) , constraints_(nh) , traj_
 
     drive_pub_ = nh_.advertise<ackermann_msgs::AckermannDriveStamped>(drive_topic, 1);
 
-    traj_.ReadCSV("skirk"); //skirk
-    stateTrajectory = traj_.waypoints_;
+    traj_read_.ReadCSV("skirk"); //skirk
+    stateTrajectory_ = traj_read_.waypoints_;
 
-    for(int i=0 ; i < 50 ; i++){
-        miniPath_.push_back( stateTrajectory.at(i) );
+    for(int i=0 ; i<horizon_; i++)
+    {
+        miniPath_.push_back(stateTrajectory_.at(i));
     }
-    itr = 50;
-    //ROS_INFO("Mini path size %d", miniPath_.size());
-    
+    itr_ = horizon_;
+
+    std::thread t(&project::DriveLoop, this);
+    t.detach();
 
 
     ros::Duration(2.0).sleep();
@@ -64,7 +67,8 @@ void project::ScanCallback(const sensor_msgs::LaserScan::ConstPtr &scan_msg)
 
 void project::OdomCallback(const nav_msgs::Odometry::ConstPtr &odom_msg)
 {
-    //ROS_INFO("ODOM");
+    traj_read_.Visualize();
+
     current_pose_ = odom_msg->pose.pose;
     if (!first_pose_estimate_)
     {
@@ -79,10 +83,7 @@ void project::OdomCallback(const nav_msgs::Odometry::ConstPtr &odom_msg)
         
         Input input_to_pass = GetNextInput();
         input_to_pass.set_v(4.5);
-        traj_.Visualize();
-
-        //*********** update minipaths here *****************//
-
+    
         //end point of mini path 
         std::pair<float , float> end_point;
         end_point.first = miniPath_.back().x();
@@ -94,31 +95,26 @@ void project::OdomCallback(const nav_msgs::Odometry::ConstPtr &odom_msg)
 
         float dist = Transforms::CalcDist(car_point , end_point);
 
-        if(dist < 0.8){
+        if(dist < 0.4){                    //PROBLEM
             miniPath_.clear();
-            for(int i=itr ; i < itr+50 ; i++){
-                miniPath_.push_back( stateTrajectory.at(i) );
+            for(int i=itr_ ; i < itr_ + horizon_ ; i++){
+                if(i >= stateTrajectory_.size())
+                {
+                    ROS_ERROR("End");
+                    break;
+                }
+                miniPath_.push_back( stateTrajectory_.at(i) );
             }
-            itr+=50;
+            itr_ += horizon_;
+            //break;
         }
 
-        mpc_.Update(current_state ,input_to_pass, miniPath_);
-            // solving only once is required 
+        mpc_.Update(current_state ,input_to_pass, miniPath_); 
         
         current_inputs_ = mpc_.solved_trajectory();
-            
-            
+        
         mpc_.Visualize();
-        //ros::Duration(2.0).sleep();
-        //itr++;
-        /****************/
-        ackermann_msgs::AckermannDriveStamped drive_msg;
-        drive_msg.header.stamp = ros::Time::now();
-        drive_msg.drive.speed = current_inputs_.at(0).v();
-        drive_msg.drive.steering_angle = current_inputs_.at(0).steer_ang();
-        drive_pub_.publish(drive_msg);
-        int dt_ms = 2*mpc_.dt()*1000;
-        /***************/
+        
         inputs_idx_ = 0;
         
     }
@@ -130,12 +126,31 @@ Input project::GetNextInput()
     // inputs_idx_ intially has garbage value ??
     //debug both of these with ROS LOGS
 
-    //if (inputs_idx_ >= current_inputs_.size())
-    //{
-        return Input(0.5,-0.05);           //v and steering
-    //}
+    if (inputs_idx_ >= current_inputs_.size())
+    {
+        return Input(0.5,-0.05);
+    }
 
-    // current_inputs_ is a vector of inputs
-    //return current_inputs_[inputs_idx_];             //returns the input object at a certain index
+    return current_inputs_[inputs_idx_];
 }
 
+
+void project::DriveLoop()
+{
+    while (true)
+    {
+        if (first_pose_estimate_ && first_scan_estimate_)
+        {
+            ackermann_msgs::AckermannDriveStamped drive_msg;
+            Input input = GetNextInput();
+            
+            drive_msg.header.stamp = ros::Time::now();
+            drive_msg.drive.speed = input.v();
+            drive_msg.drive.steering_angle = input.steer_ang();
+            drive_pub_.publish(drive_msg);
+            int dt_ms = 2*mpc_.dt()*1000;
+            inputs_idx_++;
+            std::this_thread::sleep_for(std::chrono::milliseconds(dt_ms));
+        }
+    }
+}

@@ -41,20 +41,24 @@ class project
 
         OccGrid occ_grid_;                      //occupancy grid object
         Constraints constraints_;               //constraints object
-        Trajectory traj_;                       //trajectory object
+        Trajectory traj_read_;                       //trajectory object
         MPC mpc_;
 
         std::vector<Input> current_inputs_;
-        std::vector<State> stateTrajectory;
+        std::vector<State> stateTrajectory_;
         std::vector<State> miniPath_;
+
+        int itr_=0;
         
         unsigned int inputs_idx_;               //strictly positive
+        int horizon_;
 
         void ScanCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg);
 
         void OdomCallback(const nav_msgs::Odometry::ConstPtr &odom_msg);
 
-        // Used to provide the next input for /drive
         Input GetNextInput();
+
+        void DriveLoop();
 };  
 
