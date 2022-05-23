@@ -195,33 +195,36 @@ void Constraints::FindHalfSpaces(State &state,sensor_msgs::LaserScan &scan_msg_)
     p1.z = 0.1;
     triangle_points.push_back(p1);
 
-    geometry_msgs::Point p2;
-    p2.x = p2_.first;
-    p2.y = p2_.second;
-    p2.z = 0.1;
-    triangle_points.push_back(p2);
-
     geometry_msgs::Point p;
     p.x = p_.first;
     p.y = p_.second;
     p.z = 0.1;
     triangle_points.push_back(p);
 
+    geometry_msgs::Point p2;
+    p2.x = p2_.first;
+    p2.y = p2_.second;
+    p2.z = 0.1;
+    triangle_points.push_back(p2);
+
+
     visualization_msgs::Marker marker;
     marker.header.frame_id = "map";
     marker.header.stamp = ros::Time();
     marker.ns = "current";
     marker.id = 0;
-    marker.type = visualization_msgs::Marker::SPHERE_LIST;
-    marker.action = visualization_msgs::Marker::ADD;
+    marker.type = visualization_msgs::Marker::LINE_STRIP;
+    //marker.action = visualization_msgs::Marker::ADD;
     marker.pose.orientation.x = 0.0;
     marker.pose.orientation.y = 0.0;
     marker.pose.orientation.z = 0.0;
     marker.pose.orientation.w = 1.0;
+    //marker.pose.position.x = poseX;
+    //marker.pose.position.y = poseY;
     marker.points = triangle_points;
     marker.scale.x = 0.25;
     marker.scale.y = 0.25;
-    marker.scale.z = 0.25;
+    marker.scale.z = 0.0;
     marker.color.a = 2; // Don't forget to set the alpha!
     marker.color.r = 0.0;
     marker.color.g = 0.0;

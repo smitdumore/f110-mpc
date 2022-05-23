@@ -28,7 +28,7 @@ project::project(ros::NodeHandle &nh) : occ_grid_(nh) , constraints_(nh) , traj_
 
     drive_pub_ = nh_.advertise<ackermann_msgs::AckermannDriveStamped>(drive_topic, 1);
 
-    traj_read_.ReadCSV("skirk"); //skirk
+    traj_read_.ReadCSV("levine"); //skirk
     stateTrajectory_ = traj_read_.waypoints_;
 
     for(int i=0 ; i<horizon_; i++)
@@ -46,22 +46,22 @@ project::project(ros::NodeHandle &nh) : occ_grid_(nh) , constraints_(nh) , traj_
 
 void project::ScanCallback(const sensor_msgs::LaserScan::ConstPtr &scan_msg)
 {
-    // if (first_pose_estimate_)
-    // {
-    //     if (!first_scan_estimate_)
-    //     {
+    if (first_pose_estimate_)
+    {
+        if (!first_scan_estimate_)
+        {
              first_scan_estimate_ = true;
              mpc_.UpdateScan(scan_msg);
-    //     }
-        //
-        //State state(0.0,0.0,0.0);
-        //sensor_msgs::LaserScan scan_msg_ = *scan_msg;
+        }
+        
+        State state(0.0,0.0,0.0);
+        sensor_msgs::LaserScan scan_msg_ = *scan_msg;
 
-        //constraints_.FindHalfSpaces(state , scan_msg_);
+        constraints_.FindHalfSpaces(state , scan_msg_);
 
-        //occ_grid_.FillOccGrid(current_pose_, scan_msg);
-        //occ_grid_.Visualize();
-    //}
+        occ_grid_.FillOccGrid(current_pose_, scan_msg);
+        occ_grid_.Visualize();
+    }
 }
 
 
@@ -145,7 +145,7 @@ void project::DriveLoop()
             Input input = GetNextInput();
             
             drive_msg.header.stamp = ros::Time::now();
-            drive_msg.drive.speed = input.v();
+            drive_msg.drive.speed = input.v() / 2.2;
             drive_msg.drive.steering_angle = input.steer_ang();
             drive_pub_.publish(drive_msg);
             int dt_ms = 2*mpc_.dt()*1000;
