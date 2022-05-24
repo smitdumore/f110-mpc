@@ -1,5 +1,13 @@
 #include "f110-mpc/mpc.h" 
 
+/*
+OSQP MPC : documentation
+https://robotology.github.io/osqp-eigen/md_pages_mpc.html
+
+FINAL REPORT:
+https://drive.google.com/file/d/1whZ1WoXsdho_1DM2y2Vf0ejfCZLWl4xc/view
+*/
+
 MPC::MPC(ros::NodeHandle &nh): input_size_(2) , state_size_(3) , constraints_(nh) , nh_(nh)
 {
     nh.getParam("/horizon", horizon_);
@@ -17,20 +25,66 @@ MPC::MPC(ros::NodeHandle &nh): input_size_(2) , state_size_(3) , constraints_(nh
 
     desired_input_.set_v(desired_vel);
     desired_input_.set_steer_ang(desired_steer);
+    // q is the cost matrix for reference tracking error
+    // r is the cost matrix for inputs
+
+    // q is a 3x3 diagonal matrix 
+    // x, y, yaw
     Eigen::DiagonalMatrix<double, 3> q;
+
+    // r is a 2x2 diagonal matrix
+    // v and steer
     Eigen::DiagonalMatrix<double, 2> r;
     q.diagonal() << q0, q1, q2;
     r.diagonal() << r0, r1;
     cost_ = Cost(q, r);
     
+    // num_inputs_ is the size of inputs over the entire horizon i.e 2*horizon
     num_inputs_=(input_size_ * horizon_);
+
+    // num_inputs_ is the size of inputs over the entire horizon i.e 3*horizon
+    // horizon_ + 1 is because the input applied at t=horizon will produce a state at t+1
     num_states_=(state_size_ * (horizon_ + 1));
+
+    
     num_variables_=(num_states_ + num_inputs_);
+
+    // constraints on states ??
+    // constraints on gap ??
+    // constraints on inputs 
     num_constraints_=(num_states_ + 2 * (horizon_ + 1) + num_inputs_); // dynamics + follow the gap + max/min input 
 
+    // a Hessian matrix is a diagonal square matrix 
+    // of second-order partial derivatives 
+    // of a scalar valued function
+    // A scalar valued function is a function 
+    // that takes one or more values but 
+    // returns a single value
+    // The hessian is required , because 
+    // the double derivative is needed to 
+    // calcuate the minima/maxima
+    // Hessian is also required to pass to the solver
+    // 'P' matrix denotes the Hessian in the QP problem 
+    // size is (state_size)*(horizon+1) + (input_size)*horizon (square diagonal matrix)
     hessian_.resize(num_variables_, num_variables_);
+
+    // gradient matrix takes in desired state and inputs
+    // desired state is the desired trajectory and 
+    // desried input is zero steering with full throttle
+    // it is column vector
+    // it is deonted by 'q' in the QP problem
+    // size is (state_size + input_size)* horizon
     gradient_.resize(num_variables_);
+
+    // linear matrix is also called the linear constraint matrix
+    // is is denoted by 'Ac' in the QP problem
+    // denoted by 'C' in the Final report
     linear_matrix_.resize(num_constraints_, num_variables_);
+
+    // lower bound and upper bound are column vectors
+    // they are used to store min and max values
+    // of the state and input limits
+    // denoted by 'l' and 'u' 
     lower_bound_.resize(num_constraints_);
     upper_bound_.resize(num_constraints_);
 
@@ -207,33 +261,68 @@ void MPC::Visualize()
 
 void MPC::CreateHessianMatrix()
 {
+    // initialising all positions in the SparseMatrix as zero 
     hessian_.setZero();
-    for (int ii = 0; ii < horizon_ + 1; ++ii) // change for terminal cost
-    {
+
+    // size is (state_size)*(horizon+1) + (input_size)*horizon (square diagonal matrix)
+
+    // why horizon ?
+    // why not (state_size)*(horizon+1)
+    for (int ii = 0; ii < horizon_ + 1; ++ii)
+    {   
+        // SparseBlockInit functions params
+        // (matrix, value, row position, column position)
+        // keeping row position == column position for diagonal positions
         SparseBlockInit(hessian_, cost_.q(), ii * state_size_, ii * state_size_);
     }
-    for (int ii = 0; ii < horizon_; ++ii) // change for terminal cost
+
+
+    for (int ii = 0; ii < horizon_; ++ii)
     {
+        // here the row and col positions have to start
+        // from already populated values onwards
+        // num_states_ = state_size_*horizon
         SparseBlockInit(hessian_, cost_.r(), num_states_ + ii * input_size_, num_states_ + ii * input_size_);
     }
 }
 
 void MPC::CreateGradientVector()
 {
+    /*
+    Eigen::vectorXd block : https://eigen.tuxfamily.org/dox/group__TutorialBlockOperations.html
+    */
+
+    // block(size(row), size(col), row_pos, col_pos)
+    // this is column vector so size(col) = 1 and size(col) = 1
+    // gradient matrix takes in desired state and inputs
+    // desired state is the desired trajectory and 
+    // desried input is zero steering with full throttle
     for (int ii  = 0; ii < horizon_; ++ii)
     {
         gradient_.block(ii * state_size_, 0, state_size_, 1) = -1 * cost_.q() * desired_state_trajectory_[ii].StateToVector();
         gradient_.block(num_states_ + ii * input_size_, 0, input_size_, 1) = -1 * cost_.r() * desired_input_.InputToVector();
     }
+    // should horizon - 1 be horizon + 1 ??
     gradient_.block(horizon_ * state_size_, 0, 3, 1) = -1 * cost_.q() * desired_state_trajectory_[horizon_ - 1].StateToVector();
 }
 
 void MPC::CreateLinearConstraintMatrix()
 {
+    // figure(13) on page 5 of the report is helpful
+    // https://math.stackexchange.com/questions/275310/what-is-the-difference-between-linear-and-affine-function
+    
+    // initialising all postions in sparse matrix as zero
     linear_matrix_.setZero();
+    
+    // https://math.stackexchange.com/questions/3545801/model-predictive-control-linear-mpc-with-constraints-matrix-sizes-unclear
 
+    // create a matrix a_eye(rows_size, cols_size)
     Eigen::MatrixXd a_eye(state_size_, 2 * state_size_);
+
+    // https://eigen.tuxfamily.org/dox/group__TutorialAdvancedInitialization.html
     a_eye << Eigen::MatrixXd::Identity(state_size_, state_size_), -Eigen::MatrixXd::Identity(state_size_, state_size_);
+
+
     Eigen::MatrixXd gap_con(2, state_size_);
     gap_con = Eigen::MatrixXd::Ones(2,state_size_);
 

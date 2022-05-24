@@ -54,10 +54,12 @@ void project::ScanCallback(const sensor_msgs::LaserScan::ConstPtr &scan_msg)
              mpc_.UpdateScan(scan_msg);
         }
         
-        State state(0.0,0.0,0.0);
+        float current_angle = Transforms::GetCarOrientation(current_pose_);
+        State current_state(current_pose_.position.x, current_pose_.position.y, current_angle);
+
         sensor_msgs::LaserScan scan_msg_ = *scan_msg;
 
-        constraints_.FindHalfSpaces(state , scan_msg_);
+        constraints_.FindHalfSpaces(current_state , scan_msg_);
 
         occ_grid_.FillOccGrid(current_pose_, scan_msg);
         occ_grid_.Visualize();
