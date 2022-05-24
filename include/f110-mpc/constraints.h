@@ -35,6 +35,7 @@ class Constraints
         //Eigen::MatrixXd slip_upper_bound();
         //Eigen::MatrixXd slip_lower_bound();
 
+        // these contain the half space constraints
         Eigen::VectorXd l1();
         Eigen::VectorXd l2();
 

@@ -41,8 +41,8 @@ class project
 
         OccGrid occ_grid_;                      //occupancy grid object
         Constraints constraints_;               //constraints object
-        Trajectory traj_read_;                       //trajectory object
-        MPC mpc_;
+        Trajectory traj_read_;                  //trajectory object
+        MPC mpc_;                               // mpc object
 
         std::vector<Input> current_inputs_;
         std::vector<State> stateTrajectory_;

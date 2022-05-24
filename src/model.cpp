@@ -27,6 +27,9 @@ Eigen::MatrixXd Model::C()
     return C_;
 }
 
+// Linearizes the dynamics given the current state and its input using
+// Forward Euler discretization of the kinematic model. Accurate upto dt=200ms.
+// Equation: x_(t+1) = Ax_(t)+Bu(t)+C
 void Model::Linearize(State &S, Input &I, double dt)
 {
     float L = 0.3302f;
@@ -56,4 +59,7 @@ void Model::Linearize(State &S, Input &I, double dt)
 
 
     //how is this linear ?? 
+    //from document: https://www.diva-portal.org/smash/get/diva2:1241535/FULLTEXT01.pdf, page 50
+    // https://math.stackexchange.com/questions/3177528/how-to-linearize-a-kinematic-bicycle-model
+    // yuwei wangs hmpc
 }

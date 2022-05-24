@@ -6,19 +6,21 @@ Constraints::Constraints(ros::NodeHandle &nh)
     std::string mpc_node = "";
     nh.getParam("/umax", umax_val_);
     nh.getParam("/umin", umin_val_);
-    nh.getParam("/follow_gap_thresh", ftg_thresh_);
+    nh.getParam("/follow_gap_thresh", ftg_thresh_); // 3
     nh.getParam("/state_lims", d_);
     nh.getParam("/fov_divider", divider_);
     nh.getParam("/buffer", buffer_);
 
     x_max_.resize(3,1);
-    x_max_ << OsqpEigen::INFTY, OsqpEigen::INFTY, OsqpEigen::INFTY; //x,y,ori      //plus inf
+    x_max_ << OsqpEigen::INFTY, OsqpEigen::INFTY, OsqpEigen::INFTY; //x,y,yaw      //plus inf
+
     x_min_.resize(3,1);
-    x_min_ << -OsqpEigen::INFTY,-OsqpEigen::INFTY,-OsqpEigen::INFTY; //x,y,ori    //minus in0f
+    x_min_ << -OsqpEigen::INFTY,-OsqpEigen::INFTY,-OsqpEigen::INFTY; //x,y,yaw    //minus inf
+
     u_max_.resize(2,1);
-    u_max_ << umax_val_, 0.43f; //Speed, steering
+    u_max_ << umax_val_, 0.43f; // max Speed, max steering
     u_min_.resize(2,1);
-    u_min_ << umin_val_, -0.43f; //Speed, steering
+    u_min_ << umin_val_, -0.43f; //min Speed, min steering
 
     /*
     double slip_p1_vel;
@@ -80,11 +82,13 @@ void Constraints::set_u_max(Eigen::VectorXd umax)
 
 Eigen::VectorXd Constraints::l1()
 {
+    // returns first half space contraint
     return l1_;
 }
 
 Eigen::VectorXd Constraints::l2()
 {
+    // returns first half space contraint
     return l2_;
 }
 
@@ -132,12 +136,13 @@ void Constraints::FindHalfSpaces(State &state,sensor_msgs::LaserScan &scan_msg_)
         //looping through all scan indexes
         float angle = scan_msg_.angle_min + ii * scan_msg_.angle_increment;
         // -55 deg to +55 deg
+        // considering gaps only in the front
         if (angle>-1.571f/divider_ && angle < 1.571f/divider_) // value is pi/2
         {
             //if scan dist > 3 meters 
             if (scan_msg_.ranges[ii] > ftg_thresh_)
             {   
-                //getting start and end indeices of the gap
+                //getting start and end indices of the gap
                 if (in_gap)
                 {
                     hi = ii;
@@ -176,15 +181,19 @@ void Constraints::FindHalfSpaces(State &state,sensor_msgs::LaserScan &scan_msg_)
         best_lo = best_lo+buffer_;
     }
     
+    // getting scan angle for start and end of gap
     float angle1 = scan_msg_.angle_min + best_lo * scan_msg_.angle_increment + current_angle;
     float angle2 = scan_msg_.angle_min + best_hi * scan_msg_.angle_increment + current_angle;
 
+    // getting x, y coordinates of triangle point for viz
     p1_.first = scan_msg_.ranges[best_lo] * cos(angle1) + poseX;// - 0.275 * cos(current_angle);
     p1_.second = scan_msg_.ranges[best_lo] * sin(angle1) + poseY;// - 0.275 * sin(current_angle);
 
+    // getting x, y coordinates of triangle point for viz
     p2_.first = scan_msg_.ranges[best_hi] * cos(angle2) + poseX ;//- 0.275 * cos(current_angle);
     p2_.second = scan_msg_.ranges[best_hi] * sin(angle2) + poseY ;//- 0.275 * sin(current_angle);
 
+    // origin is set to current pose
     p_.first = poseX ;//- 0.275 * cos(current_angle);
     p_.second = poseY ;//- 0.275 * sin(current_angle);
 
@@ -231,8 +240,14 @@ void Constraints::FindHalfSpaces(State &state,sensor_msgs::LaserScan &scan_msg_)
     marker.color.b = 1.0;
     points_pub_.publish(marker);
     
+    // visualisation ends
+
     float a1,b1,c1;
     float a2,b2,c2;
+
+    // equation of line joining p1 and p
+    // ax + by + c = 0
+    // a,b,c obtained by 2 point formula for straight line
     a1 = p_.second - p1_.second;
     b1 = p1_.first - p_.first;
     c1 = p_.first*p1_.second - p_.second*p1_.first;
@@ -244,6 +259,9 @@ void Constraints::FindHalfSpaces(State &state,sensor_msgs::LaserScan &scan_msg_)
         c1 = -c1;
     }
 
+    // equation of line joining p2 and p
+    // ax + by + c = 0
+    // a,b,c obtained by 2 point formula for straight line
     a2 = p_.second - p2_.second;
     b2 = p2_.first - p_.first;
     c2 = p_.first*p2_.second - p_.second*p2_.first;

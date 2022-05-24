@@ -49,8 +49,8 @@ MPC::MPC(ros::NodeHandle &nh): input_size_(2) , state_size_(3) , constraints_(nh
     
     num_variables_=(num_states_ + num_inputs_);
 
-    // constraints on states ??
-    // constraints on gap ??
+    // constraints on states
+    // constraints on gap (2 line equations) over entire horizon
     // constraints on inputs 
     num_constraints_=(num_states_ + 2 * (horizon_ + 1) + num_inputs_); // dynamics + follow the gap + max/min input 
 
@@ -124,14 +124,17 @@ void MPC::Update(State current_state , Input input, std::vector<State> &desired_
 {
     current_state_ = current_state;
     desired_state_trajectory_ = desired_state_trajectory;
+
     model_.Linearize(current_state_ , input , dt_);
     constraints_.set_state(current_state_);
     constraints_.FindHalfSpaces(current_state_ , scan_msg_);
 
     CreateGradientVector();
+
     UpdateLinearConstraintMatrix();
     UpdateLowerBound();
     UpdateUpperBound();
+    
     if (solver_init_)
     {
         if (!solver_.updateGradient(gradient_))
@@ -308,6 +311,8 @@ void MPC::CreateGradientVector()
 
 void MPC::CreateLinearConstraintMatrix()
 {
+    //This function just intialises the 'Ac' with appropriate size and identity values
+
     // figure(13) on page 5 of the report is helpful
     // https://math.stackexchange.com/questions/275310/what-is-the-difference-between-linear-and-affine-function
     
@@ -322,7 +327,7 @@ void MPC::CreateLinearConstraintMatrix()
     // https://eigen.tuxfamily.org/dox/group__TutorialAdvancedInitialization.html
     a_eye << Eigen::MatrixXd::Identity(state_size_, state_size_), -Eigen::MatrixXd::Identity(state_size_, state_size_);
 
-
+    // gap con is the cone contraints(half space contraints)
     Eigen::MatrixXd gap_con(2, state_size_);
     gap_con = Eigen::MatrixXd::Ones(2,state_size_);
 
@@ -344,6 +349,8 @@ void MPC::CreateLinearConstraintMatrix()
 
 void MPC::UpdateLinearConstraintMatrix()
 {
+    // In the context of this code ,the half space contraints are called "CONE contraints"
+    // Populating dynamics (A, B) and half space constraints in Ac (refer fig (13))
     Eigen::MatrixXd a_eye(state_size_, 2 * state_size_);
     a_eye << model_.A(), -Eigen::MatrixXd::Identity(state_size_, state_size_);
     Eigen::MatrixXd gap_con(2, state_size_);
@@ -353,6 +360,8 @@ void MPC::UpdateLinearConstraintMatrix()
     gap_con(1, 0) = constraints_.l2()(0);
     gap_con(1, 1) = constraints_.l2()(1);
     gap_con(1, 2) = 0;
+
+    // main loop that populates 'Ac'
     for (int ii = 1; ii < horizon_ + 1; ++ii)
     {
         SparseBlockSet(linear_matrix_, model_.A(), ii*state_size_, (ii - 1) * state_size_);
@@ -363,8 +372,12 @@ void MPC::UpdateLinearConstraintMatrix()
 
 void MPC::CreateLowerBound()
 {
+    // contains all lower bounds of 
+    // cone constraints and 'u'
     lower_bound_.resize(num_constraints_);
     Eigen::VectorXd gap_con(2);
+
+    // only initialsation
     gap_con(0) = -OsqpEigen::INFTY;
     gap_con(1) = -OsqpEigen::INFTY;
     lower_bound_ << Eigen::VectorXd::Zero((horizon_ + 1) * state_size_), gap_con.replicate(horizon_ + 1, 1), constraints_.u_min().replicate(horizon_, 1);
@@ -372,8 +385,12 @@ void MPC::CreateLowerBound()
 
 void MPC::CreateUpperBound()
 {
+    // contains all upper bounds of 
+    // cone constraints and 'u'
     upper_bound_.resize(num_constraints_);
     Eigen::VectorXd gap_con(2);
+
+    // only initialsation
     gap_con(0) = OsqpEigen::INFTY;
     gap_con(1) = OsqpEigen::INFTY;
     upper_bound_ << Eigen::VectorXd::Zero((horizon_ + 1) * state_size_), gap_con.replicate(horizon_ + 1, 1), constraints_.u_max().replicate(horizon_, 1);
@@ -381,19 +398,26 @@ void MPC::CreateUpperBound()
 
 void MPC::UpdateLowerBound()
 {
+    // this function populates values
     lower_bound_.resize(num_constraints_);
     Eigen::VectorXd gap_con(2);
+
+    // ??
     gap_con(0) = -OsqpEigen::INFTY;//-constraints_.l1()(2);
     gap_con(1) = -OsqpEigen::INFTY;//-constraints_.l2()(2);
+
+    // ??
     lower_bound_.head(num_states_) << -current_state_.StateToVector(), -model_.C().replicate(horizon_, 1);
     lower_bound_.block(num_states_, 0, (horizon_ + 1) * 2, 1) = gap_con.replicate(horizon_ + 1, 1);
 }
 
 void MPC::UpdateUpperBound()
 {
+    // ??
     upper_bound_.head(num_states_) << -current_state_.StateToVector(), -model_.C().replicate(horizon_, 1);
 }
 
+/*** UTILITIES ***/
 void MPC::SparseBlockInit(Eigen::SparseMatrix<double> &modify, const Eigen::MatrixXd &block, int row_start, int col_start)
 {
     int row_size = block.rows();

@@ -51,6 +51,7 @@ void project::ScanCallback(const sensor_msgs::LaserScan::ConstPtr &scan_msg)
         if (!first_scan_estimate_)
         {
              first_scan_estimate_ = true;
+             // updated scan message sent to mpc
              mpc_.UpdateScan(scan_msg);
         }
         
@@ -59,6 +60,7 @@ void project::ScanCallback(const sensor_msgs::LaserScan::ConstPtr &scan_msg)
 
         sensor_msgs::LaserScan scan_msg_ = *scan_msg;
 
+        // scan message and current pose
         constraints_.FindHalfSpaces(current_state , scan_msg_);
 
         occ_grid_.FillOccGrid(current_pose_, scan_msg);
@@ -111,6 +113,9 @@ void project::OdomCallback(const nav_msgs::Odometry::ConstPtr &odom_msg)
             //break;
         }
 
+        // input_to_pass is the desired input ie (full throttle, zero steering)
+        // current state
+        // desired reference trajectory is miniPath_
         mpc_.Update(current_state ,input_to_pass, miniPath_); 
         
         current_inputs_ = mpc_.solved_trajectory();

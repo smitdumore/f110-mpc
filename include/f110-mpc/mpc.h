@@ -47,13 +47,17 @@ class MPC
         bool solver_init_ = false;
         float dt_;
 
+        // QP matrices
         Eigen::SparseMatrix<double> hessian_;
         Eigen::VectorXd gradient_;
-        Eigen::SparseMatrix<double> linear_matrix_;      //??
+        Eigen::SparseMatrix<double> linear_matrix_;
         Eigen::VectorXd lower_bound_;
         Eigen::VectorXd upper_bound_;
+
+        // objects
         Constraints constraints_;
         Model model_;
+        
         State current_state_;
         Input desired_input_;
         std::vector<State> desired_state_trajectory_;
