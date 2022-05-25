@@ -36,7 +36,8 @@ include_directories(
 )
 
 add_executable(mpc_node 
-  #src/mpc.cpp
+  src/mpc.cpp
+  src/cost.cpp
   src/input.cpp
   src/state.cpp
   src/constraints.cpp  

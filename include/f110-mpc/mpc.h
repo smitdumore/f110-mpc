@@ -24,7 +24,7 @@ class MPC
 
         // Runs one iteration of MPC given the latest state from callback and last MPC input
         // Uses desired_state_trajectory for tracking reference
-        void Update(State current_state, Input input, std::vector<State> &desired_state_trajectory);
+        void initMPC(std::vector<State> &ref_state_trajectory, std::vector<Input> &ref_inputs);
 
         // Generates pretty lines
         void Visualize();
@@ -38,7 +38,9 @@ class MPC
         //std::vector<Input> solved_trajectory();        //is this the trajectory returned my MPC solver ??
 
     private:
-        int horizon_;
+        int N_;  // horizon
+        int nx_;
+        int nu_;
         int input_size_;
         int state_size_;
         int num_states_;

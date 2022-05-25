@@ -42,7 +42,7 @@ void project::ScanCallback(const sensor_msgs::LaserScan::ConstPtr &scan_msg)
     //     {
     //         first_scan_estimate_ = true;
     //     }
-        traj_.Visualize();
+        //traj_.Visualize();
         //State state(0.0,0.0,0.0);
         //sensor_msgs::LaserScan scan_msg_ = *scan_msg;
 
@@ -71,7 +71,7 @@ void project::OdomCallback(const nav_msgs::Odometry::ConstPtr &odom_msg)
         Input input_to_pass = GetNextInput();
         input_to_pass.set_v(4);
         
-        mpc_.Update(current_state ,input_to_pass, bestMiniPath);
+        mpc_.initMPC(bestMiniPath, , current_state);
 
         current_inputs_ = mpc_.solved_trajectory();
         mpc_.Visualize();
