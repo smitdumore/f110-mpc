@@ -413,8 +413,15 @@ void MPC::UpdateLowerBound()
 
 void MPC::UpdateUpperBound()
 {
+    // Akhil bhatt 
+    // upper_bound_.resize(num_constraints_);
+    // Eigen::VectorXd gap_con(2);
+
+    // gap_con(0) = constraints_.l1()(2);
+    // gap_con(1) = constraints_.l2()(2);
     // ??
     upper_bound_.head(num_states_) << -current_state_.StateToVector(), -model_.C().replicate(horizon_, 1);
+    // upper_bound_.block(num_states_, 0, (horizon_ + 1) * 2, 1) = gap_con.replicate(horizon_ + 1, 1);
 }
 
 /*** UTILITIES ***/

@@ -86,7 +86,7 @@ void project::OdomCallback(const nav_msgs::Odometry::ConstPtr &odom_msg)
     {
         
         Input input_to_pass = GetNextInput();
-        input_to_pass.set_v(4.5);
+        input_to_pass.set_v(2.0);
     
         //end point of mini path 
         std::pair<float , float> end_point;
