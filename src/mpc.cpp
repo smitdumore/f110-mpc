@@ -1,48 +1,34 @@
 #include "f110-mpc/mpc.h" 
 
-MPC::MPC(ros::NodeHandle &nh): input_size_(2) , state_size_(3) , constraints_(nh) , nh_(nh)
+//const int nx_ = 3;
+//const int nu_ = 2;
+
+MPC::MPC(ros::NodeHandle &nh): input_size_(2) , state_size_(3) , constraints_(nh) ,nh_(nh)
 {
     nh.getParam("/horizon", N_);
     nh.getParam("/dt", dt_);
 
-    //double desired_vel, desired_steer, q0, q1, q2, r0, r1;
+    double q0, q1, q2, r0, r1;
 
-    //nh.getParam("des_vel", desired_vel);
-    //nh.getParam("des_steer", desired_steer);
     nh_.getParam("/q0", q0);
     nh_.getParam("/q1", q1);
     nh_.getParam("/q2", q2);
     nh_.getParam("/r0", r0);
     nh_.getParam("/r1", r1);
 
-    //desired_input_.set_v(desired_vel);
-    //desired_input_.set_steer_ang(desired_steer);
     Eigen::DiagonalMatrix<double, 3> q;
     Eigen::DiagonalMatrix<double, 2> r;
     q.diagonal() << q0, q1, q2;
     r.diagonal() << r0, r1;
     cost_ = Cost(q, r);
 
-    nx_ = state_size_ =  3;
-    nu_ = input_size_ = 2;
-    
+    state_size_ =  3;
+    input_size_ = 2;
     
     num_inputs_=(input_size_ * N_);
     num_states_=(state_size_ * (N_ + 1));
     num_variables_=(num_states_ + num_inputs_);
     num_constraints_=(num_states_ + 2 * (N_ + 1) + num_inputs_); // dynamics + follow the gap + max/min input 
-
-    /*
-    lower_bound_.resize(num_constraints_);
-    upper_bound_.resize(num_constraints_);
-
-    CreateHessianMatrix();
-    CreateLinearConstraintMatrix();
-    CreateUpperBound();
-    CreateLowerBound();
-
-    QPsolution_ = Eigen::VectorXd::Zero(num_variables_);
-    */
 
     mpc_pub_ = nh.advertise<visualization_msgs::Marker>("mpc", 1);
     ROS_INFO("mpc created");
@@ -69,13 +55,12 @@ void MPC::UpdateScan(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
     scan_msg_ = *scan_msg;
 }
 
-void MPC::initMPC(std::vector<State> &ref_state_trajectory, std::vector<Input> &ref_inputs, State current_state)
+void MPC::initMPC(std::vector<State> ref_state_trajectory, std::vector<Input> ref_inputs)
 {
-    current_state_ = current_state;
+    const int nx_ = 3;
+    const int nu_ = 2;
     //desired_state_trajectory_ = desired_state_trajectory;
     //model_.Linearize(current_state_ , input , dt_);
-    constraints_set_state(current_state_);
-    constraints_.FindHalfSpaces(current_state_ , scan_msg_);
 
     Eigen::SparseMatrix<double> H_matrix((N_+1)*(nx_+nu_), (N_+1)*(nx_+nu_));
     Eigen::SparseMatrix<double> A_c((N_+1)*nx_ + 2*(N_+1) + (N_+1)*nu_, (N_+1)*(nx_+nu_));
@@ -97,12 +82,13 @@ void MPC::initMPC(std::vector<State> &ref_state_trajectory, std::vector<Input> &
     Eigen::Matrix<double, nx_, 1> hd;
     Eigen::Matrix<double, nx_, nx_> Ad;
     Eigen::Matrix<double, nx_, nu_> Bd;
-
+    
     /** MAIN LOOP **/
+    
     for (int i=0; i<N_+1; i++)
     {
-        x_ref = ref_state_trajectory[i];      //both are vector but ??
-        u_ref = ref_input[i];
+        x_ref << ref_state_trajectory[i].x() , ref_state_trajectory[i].y() , ref_state_trajectory[i].ori();     
+        u_ref << ref_inputs[i].v() , ref_inputs[i].steer_ang();
         getCarDynamics(Ad, Bd, hd, x_ref, u_ref);
  
         // fill the H_matrix with state cost Q for the first (N+1)*nx
@@ -111,16 +97,16 @@ void MPC::initMPC(std::vector<State> &ref_state_trajectory, std::vector<Input> &
         {
             for (int row=0; row<nx_; row++)
             {
-                H_matrix.insert(i*nx_ + row, i*nx_ + row) = cost_.q(row, row);
+                H_matrix.insert(i*nx_ + row, i*nx_ + row) = cost_.q()(row, row);
             }
  
             for (int row=0; row<nu_; row++)
             {
-                H_matrix.insert(((N_+1)*nx_) + (i*nu_+row), ((N_+1)*nx_) + (i*nu_+row)) = cost_.r(row, row);
+                H_matrix.insert(((N_+1)*nx_) + (i*nu_+row), ((N_+1)*nx_) + (i*nu_+row)) = cost_.r()(row, row);
             }
  
-                g.segment<nx_>(i*nx_) << -(cost_.q)*x_ref;
-                g.segment<nu_>(((N_+1)*nx_) + i*nu_) << -(cost_.r)*u_ref;
+                g.segment<nx_>(i*nx_) << -(cost_.q())*x_ref;
+                g.segment<nu_>(((N_+1)*nx_) + i*nu_) << -(cost_.r())*u_ref;
         }
  
             // fill the constraint matrix first with the dynamic constraint
@@ -172,20 +158,21 @@ void MPC::initMPC(std::vector<State> &ref_state_trajectory, std::vector<Input> &
             }
  
             lb((N_+1)*nx_ + 2*(N_+1) + i*nu_) = 0.0;
-            ub((N_+1)*nx_ + 2*(N_+1) + i*nu_) = 4.5;              //parametrized this
+            ub((N_+1)*nx_ + 2*(N_+1) + i*nu_) = 4.5;             /* TODO */ //parametrized this
  
             lb((N_+1)*nx_ + 2*(N_+1) + i*nu_ + 1) = -0.43f;
             ub((N_+1)*nx_ + 2*(N_+1) + i*nu_ + 1) = 0.43f;
     }// for ends
-
+    
 
     // fill initial condition in lb and ub
-    lb.head(nx_) = -ref_trajectory[0];
-    ub.head(nx_) = -ref_trajectory[0];
+    lb.head(nx_) = -ref_state_trajectory[0].StateToVector();
+    ub.head(nx_) = -ref_state_trajectory[0].StateToVector();
 
     // ?? 
-    lb((N_+1)*nx_ + 2*(N_+1)) = current_ego_vel_;
-    ub((N_+1)*nx_ + 2*(N_+1)) = current_ego_vel_;
+    // PROBLME /* TODO */
+    lb((N_+1)*nx_ + 2*(N_+1)) = ref_inputs[0].v();    //current_ego_vel_;
+    ub((N_+1)*nx_ + 2*(N_+1)) = ref_inputs[0].v();    //current_ego_vel_;
  
     Eigen::SparseMatrix<double> H_matrix_T = H_matrix.transpose();
     Eigen::SparseMatrix<double> sparse_I((N_+1)*(nx_+nu_), (N_+1)*(nx_+nu_));
@@ -209,10 +196,6 @@ void MPC::initMPC(std::vector<State> &ref_state_trajectory, std::vector<Input> &
  
     if(!solver.initSolver()) throw "failed to initialize solver";
  
-    planner::Inputs mpc_input;
-    mpc_input.header.stamp = ros::Time::now();
-    mpc_input.header.frame_id = ego_base_frame_;
- 
     if(!solver.solve())
     {
         ROS_ERROR("SOLVER FAILED _____");
@@ -224,16 +207,18 @@ void MPC::initMPC(std::vector<State> &ref_state_trajectory, std::vector<Input> &
     //visualizeMPC(QPSolution);
  
     const auto start_idx = (N_+1)*nx_;
- 
+  
+    solved_inputs_.clear();
+
     for (int i=start_idx; i<QPSolution.size(); i+=2)
     {
-        mpc_input.speed.push_back(QPSolution(i));
-        mpc_input.steering.push_back(QPSolution(i+1));
+        Input temp_input;
+        temp_input.set_v(QPSolution(i));
+        temp_input.set_steer_ang(QPSolution(i+1));
+        solved_inputs_.push_back(temp_input);
     }
-           
  
     solver.clearSolver();
-    
 }
 
 void MPC::getCarDynamics(Eigen::Matrix<double,nx_,nx_>& Ad, Eigen::Matrix<double,nx_,nu_>& Bd, Eigen::Matrix<double,nx_,1>& hd, Eigen::Matrix<double,nx_,1>& state, Eigen::Matrix<double,nu_,1>& input)
@@ -241,6 +226,9 @@ void MPC::getCarDynamics(Eigen::Matrix<double,nx_,nx_>& Ad, Eigen::Matrix<double
     double yaw = state(2);
             double v = input(0);
             double steer = input(1);
+
+    double C_l_ = 0.35; //car lenght
+    double Ts_ = 0.05;
 
             Eigen::VectorXd dynamics(state.size());
             dynamics(0) = input(0)*cos(state(2));
@@ -250,8 +238,12 @@ void MPC::getCarDynamics(Eigen::Matrix<double,nx_,nx_>& Ad, Eigen::Matrix<double
             Eigen::Matrix<double,nx_,nx_> Ak, M12;
             Eigen::Matrix<double,nx_,nu_> Bk;
 
-            Ak << 0.0, 0.0, (-v*sin(yaw)), 0.0, 0.0, (v*cos(yaw)), 0.0, 0.0, 0.0;
-            Bk << cos(yaw), 0.0, sin(yaw), 0.0, tan(steer)/C_l_, v/(cos(steer)*cos(steer)*C_l_);
+            Ak << 0.0, 0.0, (-v*sin(yaw)), 
+                  0.0, 0.0, (v*cos(yaw)), 
+                  0.0, 0.0, 0.0;
+
+            Bk << cos(yaw), 0.0,             sin(yaw), 
+                  0.0,      tan(steer)/C_l_, v/(cos(steer)*cos(steer)*C_l_);
 
             // from document: https://www.diva-portal.org/smash/get/diva2:1241535/FULLTEXT01.pdf, page 50
             Eigen::Matrix<double,nx_+nx_,nx_+nx_> aux, M;
@@ -268,4 +260,9 @@ void MPC::getCarDynamics(Eigen::Matrix<double,nx_,nx_>& Ad, Eigen::Matrix<double
             Ad = (Ak*Ts_).exp();
             Bd = M12*Bk;
             hd = M12*hc;
+}
+
+std::vector<Input> MPC::solved_trajectory()
+{
+    return solved_inputs_;
 }

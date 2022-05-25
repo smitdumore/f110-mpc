@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
     <launch>
-        <node pkg="f110-mpc" type="mpc_node" name="name" output="screen"/>
         <rosparam command="load" file="$(find f110-mpc)/params.yaml"/>
+        <node pkg="f110-mpc" type="mpc_node" name="name" output="screen"/>
     </launch>
