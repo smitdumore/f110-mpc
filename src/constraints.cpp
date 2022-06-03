@@ -228,8 +228,8 @@ void Constraints::FindHalfSpaces(State &state,sensor_msgs::LaserScan &scan_msg_)
     marker.color.b = 1.0;
     points_pub_.publish(marker);
     
-    float a1,b1,c1;
-    float a2,b2,c2;
+    double a1,b1,c1;
+    double a2,b2,c2;
     a1 = p_.second - p1_.second;
     b1 = p1_.first - p_.first;
     c1 = p_.first*p1_.second - p_.second*p1_.first;

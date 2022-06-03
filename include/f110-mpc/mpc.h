@@ -28,7 +28,7 @@ class MPC
 
         // Runs one iteration of MPC given the latest state from callback and last MPC input
         // Uses desired_state_trajectory for tracking reference
-        void initMPC(std::vector<State> ref_state_trajectory, std::vector<Input> ref_inputs);
+        void initMPC(std::vector<State> ref_state_trajectory, std::vector<Input> ref_inputs, Constraints);
 
         // Generates pretty lines
         void Visualize();
@@ -61,7 +61,8 @@ class MPC
         Eigen::VectorXd lower_bound_;
         Eigen::VectorXd upper_bound_;
 
-        Constraints constraints_;
+        // objects
+        //Constraints constraints_;
         Model model_;
         State current_state_;
         Input desired_input_;

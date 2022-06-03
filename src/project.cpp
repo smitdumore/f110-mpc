@@ -72,6 +72,22 @@ void project::OdomCallback(const nav_msgs::Odometry::ConstPtr &odom_msg)
         //input_to_pass.set_v(4);
 
         std::vector<Input> ref_inputs;
+        /*
+	 *
+	 *
+	 *
+	 *  MAKE SURE TO ENFORCE INTITIAL CONDITIONS
+	 * MAKE FIRST TEMP STATE AS ROBOT STATE AND HEADING FOR MINIP VECTOR
+	 * ????????????????? ref input size ????
+	 * is minp size N_ +1 for their preoject ?????????
+	 */
+        bestMiniPath.clear();
+	State temp_state_init;
+	temp_state_init.set_x(current_pose_.position.x);
+	temp_state_init.set_y(current_pose_.position.x);
+	temp_state_init.set_ori(current_angle);
+
+	bestMiniPath.push_back(temp_state_init);
 
         for(int i=0 ; i < mpc_.horizon(); i++)
         {
@@ -88,12 +104,12 @@ void project::OdomCallback(const nav_msgs::Odometry::ConstPtr &odom_msg)
             ref_inputs.push_back(temp_input);
         }
         
-        mpc_.initMPC(bestMiniPath,ref_inputs);
+        mpc_.initMPC(bestMiniPath,ref_inputs, constraints_);
 
         ROS_WARN("SOLVED SIZE : %d" ,mpc_.solved_trajectory().size());
-        //current_inputs_ = mpc_.solved_trajectory();
-        //mpc_.Visualize();
-        //inputs_idx_ = 0;
+        // current_inputs_ = mpc_.solved_trajectory();
+        // mpc_.Visualize();
+        // inputs_idx_ = 0;
         
     }
 }

@@ -3,7 +3,7 @@
 //const int nx_ = 3;
 //const int nu_ = 2;
 
-MPC::MPC(ros::NodeHandle &nh): input_size_(2) , state_size_(3) , constraints_(nh) ,nh_(nh)
+MPC::MPC(ros::NodeHandle &nh): input_size_(2) , state_size_(3) ,nh_(nh)
 {
     nh.getParam("/horizon", N_);
     nh.getParam("/dt", dt_);
@@ -55,8 +55,23 @@ void MPC::UpdateScan(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
     scan_msg_ = *scan_msg;
 }
 
-void MPC::initMPC(std::vector<State> ref_state_trajectory, std::vector<Input> ref_inputs)
-{
+/* TODO */
+// KEEP DATA TYPES SAME AS REFERENCE
+/**
+ * 
+ * 
+ * 
+ * 
+*/
+
+
+
+void MPC::initMPC(std::vector<State> ref_state_trajectory, std::vector<Input> ref_inputs, Constraints constraints_)
+{   
+    // TODO: convert state to eigen vector and store back in ref traj
+    // TODO: convert input to eigen vector and store back in ref inp
+    // TODO: populate ref inputs using propogate dynamics
+
     const int nx_ = 3;
     const int nu_ = 2;
     //desired_state_trajectory_ = desired_state_trajectory;
@@ -84,19 +99,20 @@ void MPC::initMPC(std::vector<State> ref_state_trajectory, std::vector<Input> re
     Eigen::Matrix<double, nx_, nu_> Bd;
     
     /** MAIN LOOP **/
-    
     for (int i=0; i<N_+1; i++)
     {
         x_ref << ref_state_trajectory[i].x() , ref_state_trajectory[i].y() , ref_state_trajectory[i].ori();     
         u_ref << ref_inputs[i].v() , ref_inputs[i].steer_ang();
         getCarDynamics(Ad, Bd, hd, x_ref, u_ref);
- 
+
         // fill the H_matrix with state cost Q for the first (N+1)*nx
         // diagonal and input cost R along the next (N+1)*nu diagonal
+        
         if (i > 0)
         {
             for (int row=0; row<nx_; row++)
             {
+                // TODO : recheck cost_.q()(row, row) and cost_.r()(row, row);
                 H_matrix.insert(i*nx_ + row, i*nx_ + row) = cost_.q()(row, row);
             }
  
@@ -105,14 +121,15 @@ void MPC::initMPC(std::vector<State> ref_state_trajectory, std::vector<Input> re
                 H_matrix.insert(((N_+1)*nx_) + (i*nu_+row), ((N_+1)*nx_) + (i*nu_+row)) = cost_.r()(row, row);
             }
  
-                g.segment<nx_>(i*nx_) << -(cost_.q())*x_ref;
-                g.segment<nu_>(((N_+1)*nx_) + i*nu_) << -(cost_.r())*u_ref;
+            g.segment<nx_>(i*nx_) << -(cost_.q())*x_ref;
+            g.segment<nu_>(((N_+1)*nx_) + i*nu_) << -(cost_.r())*u_ref;
+            
         }
  
-            // fill the constraint matrix first with the dynamic constraint
-            // x_k+1 = Ad*x_k + Bd*u_k + hd
+        // fill the constraint matrix first with the dynamic constraint
+        // x_k+1 = Ad*x_k + Bd*u_k + hd
         if (i < N_)
-        {
+        {       
                 for (int row=0; row<nx_; row++)
                 {
                     for (int col=0; col<nx_; col++)
@@ -131,37 +148,52 @@ void MPC::initMPC(std::vector<State> ref_state_trajectory, std::vector<Input> re
  
                 lb.segment<nx_>((i+1)*nx_) = -hd;
                 ub.segment<nx_>((i+1)*nx_) = -hd;
+                
         }
  
-            for (int row=0; row<nx_; row++)
-            {
-                A_c.insert(i*nx_+row, i*nx_+row)  = -1.0;
-            }
+        for (int row=0; row<nx_; row++)
+        {
+            A_c.insert(i*nx_+row, i*nx_+row)  = -1.0;
+        }
  
-            // fill Ax <= B
-            A_c.insert(((N_+1)*nx_) + 2*i, (i*nx_))= constraints_.l1()(0);
-            A_c.insert(((N_+1)*nx_) + 2*i, (i*nx_)+1) = constraints_.l1()(1);;
+        // fill Ax <= B
+        // half space inequality
+
+        /**
+         * CRASH
+         * constraints are empty
+        */
+
+        // auto temp  = constraints_.l1().size();
+        // std::cout << "\n size: " << temp << "\n";
+        // return;
+
+        // std::cout << "val : " << constraints_.l1()(0) << "\n";
+
+        A_c.insert(((N_+1)*nx_) + 2*i, (i*nx_))= constraints_.l1()(0);
+        A_c.insert(((N_+1)*nx_) + 2*i, (i*nx_)+1) = constraints_.l1()(1);;
+        
  
-            A_c.insert(((N_+1)*nx_) + 2*i+1, (i*nx_)) = constraints_.l2()(0);;
-            A_c.insert(((N_+1)*nx_) + 2*i+1, (i*nx_)+1) = constraints_.l2()(1);;
+        A_c.insert(((N_+1)*nx_) + 2*i+1, (i*nx_)) = constraints_.l2()(0);;
+        A_c.insert(((N_+1)*nx_) + 2*i+1, (i*nx_)+1) = constraints_.l2()(1);;
  
-            lb(((N_+1)*nx_) + 2*i) = -OsqpEigen::INFTY;
-            ub(((N_+1)*nx_) + 2*i) = constraints_.l1()(2);
+        lb(((N_+1)*nx_) + 2*i) = -OsqpEigen::INFTY;
+        ub(((N_+1)*nx_) + 2*i) = constraints_.l1()(2);
  
-            lb(((N_+1)*nx_) + 2*i+1) = -OsqpEigen::INFTY;
-            ub(((N_+1)*nx_) + 2*i+1) = constraints_.l2()(2);
+        lb(((N_+1)*nx_) + 2*i+1) = -OsqpEigen::INFTY;
+        ub(((N_+1)*nx_) + 2*i+1) = constraints_.l2()(2);
  
-            // fill u_min < u < u_max in A_c
-            for(int row=0; row<nu_; row++)
-            {
-                A_c.insert((N_+1)*nx_+2*(N_+1)+i*nu_+row, (N_+1)*nx_+i*nu_+row) = 1.0;
-            }
+        // fill u_min < u < u_max in A_c
+        for(int row=0; row<nu_; row++)
+        {
+            A_c.insert((N_+1)*nx_+2*(N_+1)+i*nu_+row, (N_+1)*nx_+i*nu_+row) = 1.0;
+        }
  
-            lb((N_+1)*nx_ + 2*(N_+1) + i*nu_) = 0.0;
-            ub((N_+1)*nx_ + 2*(N_+1) + i*nu_) = 4.5;             /* TODO */ //parametrized this
+        lb((N_+1)*nx_ + 2*(N_+1) + i*nu_) = 0.0;
+        ub((N_+1)*nx_ + 2*(N_+1) + i*nu_) = 4.5;             /* TODO */ //parametrized this
  
-            lb((N_+1)*nx_ + 2*(N_+1) + i*nu_ + 1) = -0.43f;
-            ub((N_+1)*nx_ + 2*(N_+1) + i*nu_ + 1) = 0.43f;
+        lb((N_+1)*nx_ + 2*(N_+1) + i*nu_ + 1) = -0.43f;
+        ub((N_+1)*nx_ + 2*(N_+1) + i*nu_ + 1) = 0.43f;
     }// for ends
     
 
@@ -171,6 +203,19 @@ void MPC::initMPC(std::vector<State> ref_state_trajectory, std::vector<Input> re
 
     // ?? 
     // PROBLME /* TODO */
+    /*
+    ROS_ERROR("%f", ref_inputs[0].v());
+    ROS_ERROR("%f", -ref_state_trajectory[0].StateToVector()[0] );
+    ROS_ERROR("%f", -ref_state_trajectory[0].StateToVector()[1] );
+    ROS_ERROR("%f", -ref_state_trajectory[0].StateToVector()[2] );
+    */
+
+    ROS_WARN("_________________________________________");
+    
+
+    ROS_ERROR("%d", ref_state_trajectory.size());             /////////////// PROBLEM
+    ROS_ERROR("%d", ref_inputs.size());
+
     lb((N_+1)*nx_ + 2*(N_+1)) = ref_inputs[0].v();    //current_ego_vel_;
     ub((N_+1)*nx_ + 2*(N_+1)) = ref_inputs[0].v();    //current_ego_vel_;
  
@@ -224,8 +269,8 @@ void MPC::initMPC(std::vector<State> ref_state_trajectory, std::vector<Input> re
 void MPC::getCarDynamics(Eigen::Matrix<double,nx_,nx_>& Ad, Eigen::Matrix<double,nx_,nu_>& Bd, Eigen::Matrix<double,nx_,1>& hd, Eigen::Matrix<double,nx_,1>& state, Eigen::Matrix<double,nu_,1>& input)
 {
     double yaw = state(2);
-            double v = input(0);
-            double steer = input(1);
+    double v = input(0);
+    double steer = input(1);
 
     double C_l_ = 0.35; //car lenght
     double Ts_ = 0.05;
