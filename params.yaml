@@ -10,7 +10,7 @@ scan_topic: "/scan"
 drive_topic: "/drive"
 
 horizon: 30
-dt: 0.01
+dt: 0.05
 
 #occ_grid
 occ_size: 10

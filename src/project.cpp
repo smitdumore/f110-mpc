@@ -27,7 +27,7 @@ project::project(ros::NodeHandle &nh) : occ_grid_(nh) , constraints_(nh) , traj_
 
     drive_pub_ = nh_.advertise<ackermann_msgs::AckermannDriveStamped>(drive_topic, 1);
 
-    traj_.ReadCSV("fooxx_1point75");
+    traj_.ReadCSV("levine");
     // bestMiniPath = traj_.waypoints_;
     
 

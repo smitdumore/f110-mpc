@@ -31,7 +31,9 @@ class MPC
         void initMPC(std::vector<State> ref_state_trajectory, std::vector<Input> ref_inputs, Constraints);
 
         // Generates pretty lines
-        void Visualize();
+        void visualizeMPC(Eigen::VectorXd QPSolution, State curr_state);
+        //
+        void simulate_dynamics(State& state, Input &input, double dt, State& new_state);
         // Updates scan_msg content
         void UpdateScan(const sensor_msgs::LaserScan::ConstPtr& scan_msg);
 
@@ -63,7 +65,7 @@ class MPC
 
         // objects
         //Constraints constraints_;
-        Model model_;
+        // Model model_;
         State current_state_;
         Input desired_input_;
         std::vector<State> desired_state_trajectory_;

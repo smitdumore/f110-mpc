@@ -1,4 +1,5 @@
 #include "f110-mpc/mpc.h" 
+#include <visualization_msgs/Marker.h>
 
 //const int nx_ = 3;
 //const int nu_ = 2;
@@ -103,6 +104,8 @@ void MPC::initMPC(std::vector<State> ref_state_trajectory, std::vector<Input> re
     {
         x_ref << ref_state_trajectory[i].x() , ref_state_trajectory[i].y() , ref_state_trajectory[i].ori();     
         u_ref << ref_inputs[i].v() , ref_inputs[i].steer_ang();
+
+        // ref inputs are nedded to linearize model around this inputs values 
         getCarDynamics(Ad, Bd, hd, x_ref, u_ref);
 
         // fill the H_matrix with state cost Q for the first (N+1)*nx
@@ -210,7 +213,7 @@ void MPC::initMPC(std::vector<State> ref_state_trajectory, std::vector<Input> re
     ROS_ERROR("%f", -ref_state_trajectory[0].StateToVector()[2] );
     */
 
-    ROS_WARN("_________________________________________");
+    ROS_WARN("___ ____ _______ ______ ____ _____ _______|1|____");
     
 
     ROS_ERROR("%d", ref_state_trajectory.size());             /////////////// PROBLEM
@@ -249,7 +252,7 @@ void MPC::initMPC(std::vector<State> ref_state_trajectory, std::vector<Input> re
  
     Eigen::VectorXd QPSolution = solver.getSolution();
  
-    //visualizeMPC(QPSolution);
+    visualizeMPC(QPSolution, ref_state_trajectory[0]);
  
     const auto start_idx = (N_+1)*nx_;
   
@@ -262,7 +265,7 @@ void MPC::initMPC(std::vector<State> ref_state_trajectory, std::vector<Input> re
         temp_input.set_steer_ang(QPSolution(i+1));
         solved_inputs_.push_back(temp_input);
     }
- 
+    
     solver.clearSolver();
 }
 
@@ -310,4 +313,81 @@ void MPC::getCarDynamics(Eigen::Matrix<double,nx_,nx_>& Ad, Eigen::Matrix<double
 std::vector<Input> MPC::solved_trajectory()
 {
     return solved_inputs_;
+}
+
+void MPC::visualizeMPC(Eigen::VectorXd QPSolution, State curr_state)
+{
+
+        /****
+        curr_state ->> set current state
+        ****/
+    std::vector<geometry_msgs::Point> points;
+    points.clear(); 
+
+        
+    for (int i=0; i< solved_inputs_.size(); i++)
+    {
+       
+        State new_state;
+
+        simulate_dynamics(curr_state, solved_inputs_.at(i), dt_, new_state);
+        
+        geometry_msgs::Point p;
+        p.x = new_state.x();
+        p.y = new_state.y();
+
+        if(i == 0){
+            p.x = curr_state.x();
+            p.y = curr_state.y();
+            points.push_back(p);
+        }
+
+        points.push_back(p);
+
+        curr_state = new_state;
+
+    }
+
+    visualization_msgs::Marker marker;
+    marker.header.frame_id = "base_link";
+    marker.header.stamp = ros::Time();
+    marker.ns = "current";
+    marker.id = 0;
+    marker.type = visualization_msgs::Marker::SPHERE_LIST;
+    marker.action = visualization_msgs::Marker::ADD;
+    marker.pose.orientation.x = 0.0;
+    marker.pose.orientation.y = 0.0;
+    marker.pose.orientation.z = 0.0;
+    marker.pose.orientation.w = 1.0;
+    marker.points = points;
+    marker.scale.x = 0.05;
+    marker.scale.y = 0.05;
+    marker.scale.z = 0.05;
+    marker.color.a = 0.5; // Don't forget to set the alpha!
+    marker.color.r = 1.0;
+    marker.color.g = 0.0;
+    marker.color.b = 0.0;
+
+    mpc_pub_.publish(marker);
+
+    //return marker;
+}
+
+void MPC::simulate_dynamics(State& state, Input &input, double dt, State& new_state)
+{   
+    double CAR_LENGTH = 0.35;
+
+    Eigen::VectorXd dynamics(state.size());
+    Eigen::VectorXd state_vector;
+    Eigen::VectorXd new_state_vector;
+
+    dynamics(0) = input.v() * cos(state.ori());
+    dynamics(1) = input.v() * sin(state.ori());
+    dynamics(2) = tan(input.steer_ang()) * input.v()/CAR_LENGTH;
+    state_vector = state.StateToVector();
+    new_state_vector = state_vector + dynamics*dt;
+    
+    new_state.set_x(new_state_vector(0));
+    new_state.set_y(new_state_vector(1));
+    new_state.set_ori(new_state_vector(2));
 }
