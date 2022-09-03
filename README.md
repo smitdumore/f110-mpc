@@ -1,6 +1,6 @@
 # f110-mpc
 model predictive control in f1tenth simulator
-![Screenshot from 2022-05-09 22-04-30](https://user-images.githubusercontent.com/75038294/167456698-117a1c14-fe55-41c7-a202-d9c758d49e2d.png)
+![ezgif com-gif-maker](https://user-images.githubusercontent.com/75038294/188287172-a3a5bced-eb3e-4f0f-b888-33585b3a36c6.gif)
 
 This project is a racing strategy for autonomous racing for the f1tenth platform. The goal of this project is to compete head to head with opponents on the race track at high speeds without crashing into the opponent or any other obstacles.
 
